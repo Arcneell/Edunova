@@ -42,6 +42,13 @@ class Rank(models.Model):
         db_column='xp_threshold',
         help_text=_('XP minimum pour atteindre ce rang (inclus).'),
     )
+    stars = models.PositiveSmallIntegerField(
+        _('étoiles'),
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(3)],
+        db_column='stars',
+        help_text=_('1 = débutant, 2 = confirmé, 3 = expert.'),
+    )
 
     class Meta:
         db_table = 'rank'
@@ -50,7 +57,7 @@ class Rank(models.Model):
         ordering = ['xp_threshold']
 
     def __str__(self) -> str:
-        return f'{self.label} ({self.xp_threshold} XP)'
+        return f'{"★" * self.stars} {self.label} ({self.xp_threshold} XP)'
 
 
 # Gamification · badges, cosmétiques

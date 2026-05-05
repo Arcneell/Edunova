@@ -270,15 +270,15 @@ class Command(BaseCommand):
 
     def _seed_ranks(self) -> dict[str, Rank]:
         rank_specs = {
-            "novice": {"label": "Technicien Novice", "xp": 0},
-            "intermediaire": {"label": "Administrateur Reseau", "xp": 500},
-            "expert": {"label": "Architecte Infrastructure", "xp": 1500},
+            "novice":        {"label": "Technicien Novice",         "xp": 0,    "stars": 1},
+            "intermediaire": {"label": "Administrateur Reseau",      "xp": 1000, "stars": 2},
+            "expert":        {"label": "Architecte Infrastructure",  "xp": 3000, "stars": 3},
         }
         ranks: dict[str, Rank] = {}
         for key, spec in rank_specs.items():
             rank, _ = Rank.objects.update_or_create(
                 label=spec["label"],
-                defaults={"xp_threshold": spec["xp"]},
+                defaults={"xp_threshold": spec["xp"], "stars": spec["stars"]},
             )
             ranks[key] = rank
         return ranks
