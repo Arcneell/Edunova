@@ -62,9 +62,11 @@ docker compose up --build
 
 | Service   | URL / port typique |
 |----------|--------------------|
-| Backend  | `http://localhost:8000` |
-| Frontend | `http://localhost:5173` |
-| Postgres | port `5432` |
+| Backend  | `http://localhost:${BACKEND_PORT}` (souvent 8000, voir `.env`) |
+| Frontend | `http://localhost:${FRONTEND_PORT}` (souvent 5173) |
+| Postgres | port défini par **`POSTGRES_PORT`** dans `.env` (ex. `5432`) |
+
+**PostgreSQL** : renseigner **`POSTGRES_DB`**, **`POSTGRES_USER`**, **`POSTGRES_PASSWORD`** et **`POSTGRES_PORT`** dans `.env` (aucune valeur par défaut dans `docker-compose.yml`).
 
 Au démarrage du backend : attente Postgres puis **`migrate --noinput`** (bases vides ⇒ toutes les migrations appliquées). Pas de migration pendant **`docker build`**.
 
