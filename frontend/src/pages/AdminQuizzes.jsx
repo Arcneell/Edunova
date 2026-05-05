@@ -1,41 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import {
+  getFormateurQuestionAnswers,
+  getFormateurQuizQuestions,
+  getFormateurQuizzes,
+} from '../api/user/formateur.js'
 import { useAuth } from '../hooks/useAuth.js'
-
-const demoQuizzes = [
-  {
-    id: 'QZ-JS-01',
-    title: 'Quiz JavaScript Fondamentaux',
-    course: 'Bases JavaScript',
-    questions: [
-      {
-        id: 'Q1',
-        label: 'Quel mot-clé déclare une constante ?',
-        answers: ['let', 'const', 'var'],
-        correct: 'const',
-      },
-      {
-        id: 'Q2',
-        label: 'Quel type retourne typeof [] ?',
-        answers: ['array', 'object', 'list'],
-        correct: 'object',
-      },
-    ],
-  },
-  {
-    id: 'QZ-RC-02',
-    title: 'Quiz React Intermédiaire',
-    course: 'React intermédiaire',
-    questions: [
-      {
-        id: 'Q1',
-        label: "Quel hook gère l'état local ?",
-        answers: ['useState', 'useRoute', 'useMemoizedValue'],
-        correct: 'useState',
-      },
-    ],
-  },
-]
 
 function adminLinkClass({ isActive }) {
   return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
@@ -43,10 +13,70 @@ function adminLinkClass({ isActive }) {
 
 export default function AdminQuizzes() {
   const { user } = useAuth()
-  const [selectedQuizId, setSelectedQuizId] = useState(demoQuizzes[0]?.id ?? '')
+  const [quizzes, setQuizzes] = useState([])
+  const [selectedQuizId, setSelectedQuizId] = useState('')
+  const [questions, setQuestions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingQuestions, setLoadingQuestions] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadQuizzes() {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await getFormateurQuizzes()
+        const list = Array.isArray(data) ? data : []
+        setQuizzes(list)
+        setSelectedQuizId(String(list[0]?.quiz_id ?? ''))
+      } catch (e) {
+        const message = e?.data?.detail || e?.message || 'Impossible de charger les quiz.'
+        setError(message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    void loadQuizzes()
+  }, [])
+
+  useEffect(() => {
+    async function loadQuestions() {
+      if (!selectedQuizId) {
+        setQuestions([])
+        return
+      }
+      setLoadingQuestions(true)
+      setError('')
+      try {
+        const rawQuestions = await getFormateurQuizQuestions(Number(selectedQuizId))
+        const hydrated = await Promise.all(
+          rawQuestions.map(async (question) => {
+            const answers = await getFormateurQuestionAnswers(question.question_id)
+            const correct = (answers || []).find((answer) => answer.is_correct)
+            return {
+              id: question.question_id,
+              label: question.question_content,
+              answers: (answers || []).map((answer) => answer.label_answer),
+              correct: correct ? correct.label_answer : '—',
+            }
+          }),
+        )
+        setQuestions(hydrated)
+      } catch (e) {
+        const message =
+          e?.data?.detail || e?.message || 'Impossible de charger les questions/reponses.'
+        setError(message)
+        setQuestions([])
+      } finally {
+        setLoadingQuestions(false)
+      }
+    }
+    void loadQuestions()
+  }, [selectedQuizId])
+
   const quiz = useMemo(
-    () => demoQuizzes.find((q) => q.id === selectedQuizId) ?? null,
-    [selectedQuizId]
+    () => quizzes.find((q) => String(q.quiz_id) === String(selectedQuizId)) ?? null,
+    [quizzes, selectedQuizId],
   )
 
   return (
@@ -85,26 +115,33 @@ export default function AdminQuizzes() {
               <select
                 value={selectedQuizId}
                 onChange={(e) => setSelectedQuizId(e.target.value)}
+                disabled={loading || quizzes.length === 0}
               >
-                {demoQuizzes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title} · {item.course}
+                {quizzes.map((item) => (
+                  <option key={item.quiz_id} value={item.quiz_id}>
+                    Quiz #{item.quiz_id} · score min {item.min_score_to_pass}%
                   </option>
                 ))}
               </select>
             </label>
           </div>
+          {loading ? <p className="muted">Chargement des quiz...</p> : null}
+          {error ? <p className="error">{error}</p> : null}
+          {!loading && !error && quizzes.length === 0 ? (
+            <p className="dash-empty">Aucun quiz en base pour ce formateur.</p>
+          ) : null}
           <p className="hint">
-            Astuce: ajoutez une action backend sur cette page pour créer, archiver ou
-            publier un quiz.
+            Les quiz, questions et réponses affichés proviennent de la base de données.
           </p>
         </article>
 
         <article>
           <h2 className="section-title">Questions / Réponses</h2>
-          {!quiz ? (
+          {loadingQuestions ? <p className="muted">Chargement des questions...</p> : null}
+          {!loadingQuestions && !quiz ? (
             <p className="dash-empty">Aucun quiz sélectionné.</p>
-          ) : (
+          ) : null}
+          {!loadingQuestions && quiz ? (
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
@@ -116,7 +153,7 @@ export default function AdminQuizzes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {quiz.questions.map((question) => (
+                  {questions.map((question) => (
                     <tr key={question.id}>
                       <td>{question.id}</td>
                       <td>{question.label}</td>
@@ -126,10 +163,15 @@ export default function AdminQuizzes() {
                       </td>
                     </tr>
                   ))}
+                  {questions.length === 0 ? (
+                    <tr>
+                      <td colSpan={4}>Aucune question pour ce quiz.</td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
-          )}
+          ) : null}
         </article>
       </section>
     </div>

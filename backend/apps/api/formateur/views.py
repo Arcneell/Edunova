@@ -20,14 +20,14 @@ FORMATEUR_PERMISSIONS = [IsAuthenticated, IsFormateur]
 # ── Cours ──────────────────────────────────────────────────────────────────────
 
 class FormateurCourseListCreateView(APIView):
-    """GET  /api/formateur/courses/  — liste des cours du formateur
+    """GET  /api/formateur/courses/  — liste de tous les cours
     POST /api/formateur/courses/  — créer un cours
     """
 
     permission_classes = FORMATEUR_PERMISSIONS
 
     def get(self, request):
-        courses = Course.objects.filter(created_by=request.user).select_related(
+        courses = Course.objects.select_related(
             'theme', 'validating_quiz', 'delivered_badge'
         )
         return Response(FormateurCourseSerializer(courses, many=True).data)
@@ -44,21 +44,21 @@ class FormateurCourseDetailView(APIView):
 
     permission_classes = FORMATEUR_PERMISSIONS
 
-    def _get_own_course(self, request, course_id):
-        return get_object_or_404(Course, pk=course_id, created_by=request.user)
+    def _get_course(self, course_id):
+        return get_object_or_404(Course, pk=course_id)
 
     def get(self, request, course_id):
-        return Response(FormateurCourseSerializer(self._get_own_course(request, course_id)).data)
+        return Response(FormateurCourseSerializer(self._get_course(course_id)).data)
 
     def patch(self, request, course_id):
-        course = self._get_own_course(request, course_id)
+        course = self._get_course(course_id)
         serializer = FormateurCourseSerializer(course, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
     def delete(self, request, course_id):
-        self._get_own_course(request, course_id).delete()
+        self._get_course(course_id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -71,7 +71,7 @@ class FormateurCourseStatsView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def get(self, request, course_id):
-        course = get_object_or_404(Course, pk=course_id, created_by=request.user)
+        course = get_object_or_404(Course, pk=course_id)
 
         enrollments = (
             CourseEnrollment.objects
@@ -109,7 +109,7 @@ class FormateurQuizListCreateView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def get(self, request):
-        quizzes = Quiz.objects.filter(created_by=request.user)
+        quizzes = Quiz.objects.all()
         return Response(FormateurQuizSerializer(quizzes, many=True).data)
 
     def post(self, request):
@@ -152,7 +152,7 @@ class FormateurQuestionListCreateView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def get(self, request, quiz_id):
-        get_object_or_404(Quiz, pk=quiz_id, created_by=request.user)
+        get_object_or_404(Quiz, pk=quiz_id)
         questions = Question.objects.filter(quiz_id=quiz_id)
         return Response(FormateurQuestionSerializer(questions, many=True).data)
 
@@ -194,7 +194,7 @@ class FormateurAnswerListCreateView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def get(self, request, question_id):
-        get_object_or_404(Question, pk=question_id, quiz__created_by=request.user)
+        get_object_or_404(Question, pk=question_id)
         answers = Answer.objects.filter(question_id=question_id)
         return Response(FormateurAnswerSerializer(answers, many=True).data)
 

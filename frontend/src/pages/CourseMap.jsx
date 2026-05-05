@@ -2,24 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getQuizPlay, getThemeMap, getThemes, submitQuiz } from '../api/user/learningMap.js'
 
-const MAP_PATH_POINTS = [
-  { x: 15, y: 8 },
-  { x: 28, y: 16 },
-  { x: 43, y: 12 },
-  { x: 60, y: 18 },
-  { x: 73, y: 22 },
-  { x: 80, y: 34 },
-  { x: 69, y: 43 },
-  { x: 55, y: 42 },
-  { x: 42, y: 47 },
-  { x: 30, y: 45 },
-  { x: 17, y: 50 },
-  { x: 10, y: 62 },
-  { x: 21, y: 70 },
-  { x: 33, y: 76 },
-  { x: 47, y: 73 },
-  { x: 61, y: 76 },
-  { x: 75, y: 73 },
+const COURSE_FIXED_POINTS = [
+  { x: 18.0, y: 88.8 },
+  { x: 44.7, y: 55.5 },
+  { x: 63.6, y: 76.4 },
+  { x: 74.4, y: 63.0 },
+  { x: 74.6, y: 43.2 },
 ]
 
 function interpolatePoint(start, end, ratio) {
@@ -29,14 +17,31 @@ function interpolatePoint(start, end, ratio) {
   }
 }
 
-function getNodePosition(index, total) {
-  if (total <= 1) return { left: '15%', top: '8%' }
-  const scaled = (index / (total - 1)) * (MAP_PATH_POINTS.length - 1)
+function getNodePosition(index, total, points) {
+  if (points[index]) {
+    return { left: `${points[index].x}%`, top: `${points[index].y}%` }
+  }
+  if (total <= 1) return { left: `${points[0].x}%`, top: `${points[0].y}%` }
+  const scaled = (index / (total - 1)) * (points.length - 1)
   const lower = Math.floor(scaled)
-  const upper = Math.min(lower + 1, MAP_PATH_POINTS.length - 1)
+  const upper = Math.min(lower + 1, points.length - 1)
   const ratio = scaled - lower
-  const point = interpolatePoint(MAP_PATH_POINTS[lower], MAP_PATH_POINTS[upper], ratio)
+  const point = interpolatePoint(points[lower], points[upper], ratio)
   return { left: `${point.x}%`, top: `${point.y}%` }
+}
+
+function buildMapNodes(checkpoints) {
+  const courseNodes = []
+  checkpoints.forEach((checkpoint, index) => {
+    courseNodes.push({
+      id: `course-${checkpoint.course_id}`,
+      kind: 'course',
+      checkpoint,
+      status: checkpoint.status,
+      position: getNodePosition(index, checkpoints.length, COURSE_FIXED_POINTS),
+    })
+  })
+  return courseNodes
 }
 
 export default function CourseMap() {
@@ -51,6 +56,7 @@ export default function CourseMap() {
   const [answers, setAnswers] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [resultMessage, setResultMessage] = useState('')
+  const [selectedNode, setSelectedNode] = useState(null)
 
   async function loadMap(themeId) {
     setLoadingMap(true)
@@ -89,8 +95,9 @@ export default function CourseMap() {
   }, [])
 
   const checkpoints = useMemo(() => mapData?.checkpoints ?? [], [mapData])
+  const mapNodes = useMemo(() => buildMapNodes(checkpoints), [checkpoints])
 
-  async function handleOpenQuiz(checkpoint) {
+  async function handleOpenQuiz(checkpoint, nodeKind = 'quiz') {
     setResultMessage('')
     setError('')
     if (!checkpoint.quiz?.quiz_id) {
@@ -99,6 +106,7 @@ export default function CourseMap() {
     }
     try {
       const quiz = await getQuizPlay(checkpoint.quiz.quiz_id)
+      setSelectedNode({ kind: nodeKind, checkpoint })
       setActiveQuiz({
         checkpoint,
         quiz,
@@ -140,20 +148,32 @@ export default function CourseMap() {
   function handleValidateMap(event) {
     event.preventDefault()
     setActiveQuiz(null)
+    setSelectedNode(null)
     void loadMap(Number(selectedThemeId))
+  }
+
+  function handleCloseMap() {
+    setMapValidated(false)
+    setMapData(null)
+    setActiveQuiz(null)
+    setSelectedNode(null)
+    setAnswers({})
+    setError('')
   }
 
   return (
     <div className="page">
-      <header className="page-header">
-        <p className="page-header__eyebrow">Parcours</p>
-        <h1>Ma thématique</h1>
-        <p className="page-header__lead">
-          Avance checkpoint par checkpoint. Chaque quiz validé débloque le point suivant.
-        </p>
-      </header>
+      {!mapValidated ? (
+        <>
+          <header className="page-header">
+            <p className="page-header__eyebrow">Parcours</p>
+            <h1>Ma thématique</h1>
+            <p className="page-header__lead">
+              Avance checkpoint par checkpoint. Chaque quiz validé débloque le point suivant.
+            </p>
+          </header>
 
-      <section className="card">
+          <section className="card">
         <form className="stack-form" onSubmit={handleValidateMap}>
           <label>
             Thématique
@@ -162,6 +182,7 @@ export default function CourseMap() {
               onChange={(e) => {
                 setSelectedThemeId(e.target.value)
                 setActiveQuiz(null)
+                setSelectedNode(null)
                 setMapValidated(false)
                 setMapData(null)
               }}
@@ -191,94 +212,140 @@ export default function CourseMap() {
           <p className="hint">Sélectionne une thématique puis clique sur Valider.</p>
         ) : null}
 
-        {!loadingThemes && mapValidated ? (
-          <div className="course-map">
+          </section>
+        </>
+      ) : null}
+
+      {!loadingThemes && mapValidated ? (
+        <section className="course-map-fullscreen">
+          <div className="course-map-fullscreen__topbar">
+            <strong>{mapData?.theme_title || 'Thématique'}</strong>
+            <button type="button" className="btn btn--secondary" onClick={handleCloseMap}>
+              Quitter la map
+            </button>
+          </div>
+          <div className="course-map course-map--fullscreen">
             <div className="course-map__board" role="img" aria-label="Carte statique des cours">
-              {checkpoints.map((checkpoint, index) => {
-                const position = getNodePosition(index, checkpoints.length)
-                const statusLabel =
-                  checkpoint.status === 'completed'
-                    ? 'Terminé'
-                    : checkpoint.status === 'unlocked'
-                      ? 'Débloqué'
-                      : 'Verrouillé'
+              {mapNodes.map((node) => {
+                const position = node.position
+                const checkpoint = node.checkpoint
+                const typeLabel = node.kind === 'quiz' ? 'Quiz' : 'Cours'
                 return (
                   <button
-                    key={checkpoint.course_id}
+                    key={node.id}
                     type="button"
-                    className={`course-map__node course-map__node--${checkpoint.status}`}
+                    className={`course-map__node course-map__node--${checkpoint.status} course-map__node--${node.kind}`}
                     style={position}
                     onClick={() => {
-                      if (checkpoint.status !== 'locked') void handleOpenQuiz(checkpoint)
+                      if (checkpoint.status === 'locked') return
+                      if (node.kind === 'quiz') {
+                        void handleOpenQuiz(checkpoint, 'quiz')
+                      } else {
+                        setSelectedNode(node)
+                        setActiveQuiz(null)
+                      }
                     }}
                     disabled={checkpoint.status === 'locked'}
-                    title={`${checkpoint.title} (${statusLabel})`}
+                    title={`${typeLabel} · ${checkpoint.title}`}
                   >
-                    <span className="course-map__node-order">{checkpoint.map_order}</span>
+                    <span className="course-map__node-order">
+                      {node.kind === 'quiz' ? 'Q' : checkpoint.map_order}
+                    </span>
                   </button>
                 )
               })}
             </div>
-
-            {checkpoints.length > 0 ? (
-              <p className="hint">
-                Clique sur un point debloque pour lancer le quiz du cours correspondant.
-              </p>
-            ) : (
+            {mapNodes.length === 0 ? (
               <p className="hint">Aucun cours disponible sur cette thématique.</p>
-            )}
+            ) : null}
           </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
-      {activeQuiz ? (
-        <section className="card course-quiz">
-          <h2 className="section-title">
-            Quiz du checkpoint: {activeQuiz.checkpoint.title}
-          </h2>
-          <form className="stack-form" onSubmit={handleSubmitQuiz}>
-            {activeQuiz.quiz.questions.map((question, index) => (
-              <fieldset key={question.question_id} className="quiz-question">
-                <legend>
-                  {index + 1}. {question.question_content}
-                </legend>
-                {question.answers.map((answer) => (
-                  <label key={answer.answer_id} className="quiz-answer">
-                    <input
-                      type="radio"
-                      name={`q-${question.question_id}`}
-                      value={answer.answer_id}
-                      checked={String(answers[question.question_id] || '') === String(answer.answer_id)}
-                      onChange={(e) =>
-                        setAnswers((prev) => ({
-                          ...prev,
-                          [question.question_id]: e.target.value,
-                        }))
-                      }
-                    />
-                    <span>{answer.label_answer}</span>
-                  </label>
-                ))}
-              </fieldset>
-            ))}
-
-            <div className="hero-actions">
-              <button type="submit" className="btn btn--primary" disabled={submitting}>
-                {submitting ? 'Validation…' : 'Valider le quiz'}
-              </button>
+      {selectedNode ? (
+        <div className="course-map-modal__overlay" onClick={() => {
+          setSelectedNode(null)
+          setActiveQuiz(null)
+          setAnswers({})
+        }}>
+          <section className="course-map-modal card" onClick={(event) => event.stopPropagation()}>
+            <div className="course-map-modal__head">
+              <h2 className="section-title">
+                {selectedNode.kind === 'quiz' ? 'Quiz' : 'Cours'}: {selectedNode.checkpoint.title}
+              </h2>
               <button
                 type="button"
                 className="btn btn--secondary"
                 onClick={() => {
+                  setSelectedNode(null)
                   setActiveQuiz(null)
                   setAnswers({})
                 }}
               >
-                Annuler
+                Fermer
               </button>
             </div>
-          </form>
-        </section>
+
+            {selectedNode.kind === 'course' ? (
+              <div className="stack-form">
+                <p className="muted">
+                  Cours #{selectedNode.checkpoint.course_id} · Ordre {selectedNode.checkpoint.map_order}
+                </p>
+                <div className="hero-actions">
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    disabled={!selectedNode.checkpoint.quiz?.quiz_id}
+                    onClick={() => void handleOpenQuiz(selectedNode.checkpoint, 'quiz')}
+                  >
+                    Lancer le quiz du cours
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {activeQuiz ? (
+              <form className="stack-form course-quiz" onSubmit={handleSubmitQuiz}>
+                {activeQuiz.quiz.questions.map((question, index) => (
+                  <fieldset key={question.question_id} className="quiz-question">
+                    <legend>
+                      {index + 1}. {question.question_content}
+                    </legend>
+                    <div className="quiz-answers-grid">
+                      {question.answers.map((answer, answerIndex) => (
+                        <label
+                          key={answer.answer_id}
+                          className={`quiz-answer quiz-answer--${answerIndex % 4}`}
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${question.question_id}`}
+                            value={answer.answer_id}
+                            checked={String(answers[question.question_id] || '') === String(answer.answer_id)}
+                            onChange={(e) =>
+                              setAnswers((prev) => ({
+                                ...prev,
+                                [question.question_id]: e.target.value,
+                              }))
+                            }
+                          />
+                          <span className="quiz-answer__marker" aria-hidden="true" />
+                          <span>{answer.label_answer}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
+
+                <div className="hero-actions">
+                  <button type="submit" className="btn btn--primary" disabled={submitting}>
+                    {submitting ? 'Validation…' : 'Valider le quiz'}
+                  </button>
+                </div>
+              </form>
+            ) : null}
+          </section>
+        </div>
       ) : null}
 
       <div className="hero-actions">

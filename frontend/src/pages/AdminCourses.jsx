@@ -1,35 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import {
+  deleteFormateurCourse,
+  getFormateurCourses,
+  updateFormateurCourse,
+} from '../api/user/formateur.js'
 import { useAuth } from '../hooks/useAuth.js'
-
-const demoCourses = [
-  {
-    id: 'CRS-101',
-    title: 'Bases JavaScript',
-    level: 'Débutant',
-    lessons: 12,
-    status: 'Publié',
-    authorId: 1,
-    authorName: 'Admin',
-  },
-  {
-    id: 'CRS-205',
-    title: 'React intermédiaire',
-    level: 'Intermédiaire',
-    lessons: 18,
-    status: 'Brouillon',
-    authorId: 2,
-    authorName: 'Formateur principal',
-  },
-  {
-    id: 'CRS-330',
-    title: 'API REST avec Django',
-    level: 'Avancé',
-    lessons: 15,
-    status: 'Publié',
-    authorId: 3,
-    authorName: 'Formateur sécurité',
-  },
-]
 
 function adminLinkClass({ isActive }) {
   return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
@@ -49,8 +25,90 @@ function isTrainer(user) {
 
 export default function AdminCourses() {
   const { user } = useAuth()
-  const currentUserId = user?.user_id ?? null
   const trainerAccount = isTrainer(user)
+  const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [editingCourse, setEditingCourse] = useState(null)
+  const [editForm, setEditForm] = useState({
+    course_title: '',
+    body_content: '',
+    map_order: 0,
+  })
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  async function loadCourses() {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await getFormateurCourses()
+      setCourses(Array.isArray(data) ? data : [])
+    } catch (e) {
+      const message = e?.data?.detail || e?.message || 'Impossible de charger les cours.'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadCourses()
+  }, [])
+
+  async function handleDelete(course) {
+    if (!window.confirm(`Supprimer le cours "${course.course_title}" ?`)) return
+    setError('')
+    try {
+      await deleteFormateurCourse(course.course_id)
+      await loadCourses()
+    } catch (e) {
+      const message = e?.data?.detail || e?.message || 'Suppression impossible.'
+      setError(message)
+    }
+  }
+
+  function handleEditOpen(course) {
+    setEditingCourse(course)
+    setEditForm({
+      course_title: course.course_title || '',
+      body_content: course.body_content || '',
+      map_order: Number(course.map_order || 0),
+    })
+  }
+
+  function handleEditClose() {
+    if (savingEdit) return
+    setEditingCourse(null)
+  }
+
+  async function handleEditSubmit(event) {
+    event.preventDefault()
+    if (!editingCourse) return
+
+    const nextTitle = editForm.course_title.trim()
+    const nextContent = editForm.body_content.trim()
+    if (!nextTitle) {
+      setError('Le titre du cours est obligatoire.')
+      return
+    }
+
+    setError('')
+    setSavingEdit(true)
+    try {
+      await updateFormateurCourse(editingCourse.course_id, {
+        course_title: nextTitle,
+        body_content: nextContent,
+        map_order: Number(editForm.map_order) || 0,
+      })
+      await loadCourses()
+      setEditingCourse(null)
+    } catch (e) {
+      const message = e?.data?.detail || e?.message || 'Modification impossible.'
+      setError(message)
+    } finally {
+      setSavingEdit(false)
+    }
+  }
 
   return (
     <div className="page">
@@ -80,31 +138,29 @@ export default function AdminCourses() {
       </header>
 
       <section className="admin-cards">
-        {demoCourses.map((course) => (
-          (() => {
-            const canEditOrDelete = !trainerAccount || course.authorId === currentUserId
+        {loading ? <p className="muted">Chargement des cours...</p> : null}
+        {error ? <p className="error">{error}</p> : null}
+        {!loading && !error && courses.length === 0 ? (
+          <p className="dash-empty">Aucun cours disponible en base.</p>
+        ) : null}
 
-            return (
-              <article key={course.id} className="card admin-card">
+        {!loading && !error
+          ? courses.map((course) => (
+              <article key={course.course_id} className="card admin-card">
                 <div className="admin-card__head">
-                  <h2>{course.title}</h2>
-                  <span className="dash-badge dash-badge--purple">{course.status}</span>
+                  <h2>{course.course_title}</h2>
+                  <span className="dash-badge dash-badge--purple">Publié</span>
                 </div>
                 <p className="muted">
-                  {course.id} · Niveau {course.level} · {course.lessons} leçons
+                  #{course.course_id} · Ordre carte {course.map_order}
                 </p>
-                <p className="muted">Créé par {course.authorName}</p>
-                {trainerAccount && !canEditOrDelete ? (
-                  <p className="muted">Cours en lecture seule : créé par un autre formateur.</p>
-                ) : null}
+                <p className="muted">Thème ID: {course.theme} · Quiz ID: {course.validating_quiz}</p>
+                {trainerAccount ? <p className="muted">Cours visible depuis la base globale.</p> : null}
                 <div className="hero-actions admin-card__actions">
-                  <button type="button" className="btn btn--secondary" disabled={!canEditOrDelete}>
+                  <button type="button" className="btn btn--secondary" onClick={() => handleEditOpen(course)}>
                     Modifier
                   </button>
-                  <button type="button" className="btn btn--secondary">
-                    Dupliquer
-                  </button>
-                  <button type="button" className="btn btn--secondary" disabled={!canEditOrDelete}>
+                  <button type="button" className="btn btn--secondary" onClick={() => handleDelete(course)}>
                     Supprimer
                   </button>
                   <Link to="/admin/quizz" className="btn btn--primary">
@@ -112,10 +168,62 @@ export default function AdminCourses() {
                   </Link>
                 </div>
               </article>
-            )
-          })()
-        ))}
+            ))
+          : null}
       </section>
+
+      {editingCourse ? (
+        <div className="course-map-modal__overlay" role="dialog" aria-modal="true" aria-label="Modifier un cours">
+          <div className="course-map-modal card">
+            <div className="course-map-modal__head">
+              <h2 className="section-title">Modifier le cours</h2>
+              <button type="button" className="btn btn--secondary" onClick={handleEditClose} disabled={savingEdit}>
+                Fermer
+              </button>
+            </div>
+            <form className="stack-form" onSubmit={handleEditSubmit}>
+              <label>
+                Titre du cours
+                <input
+                  type="text"
+                  value={editForm.course_title}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, course_title: e.target.value }))}
+                  required
+                />
+              </label>
+
+              <label>
+                Contenu du cours
+                <textarea
+                  rows={8}
+                  value={editForm.body_content}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, body_content: e.target.value }))}
+                  placeholder="Décrivez le contenu pédagogique du cours..."
+                />
+              </label>
+
+              <label>
+                Ordre sur la carte
+                <input
+                  type="number"
+                  min={0}
+                  value={editForm.map_order}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, map_order: e.target.value }))}
+                />
+              </label>
+
+              <div className="hero-actions">
+                <button type="submit" className="btn btn--primary" disabled={savingEdit}>
+                  {savingEdit ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={handleEditClose} disabled={savingEdit}>
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

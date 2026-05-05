@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.api.users.permissions import is_learner_role
-from apps.edunova.models import Course, Theme
+from apps.edunova.models import Course, Theme, UserCourseProgress
 from .serializers import ThemeSerializer
 
 
@@ -53,16 +53,45 @@ class ThemeMapView(APIView):
                 {'theme_id': theme.theme_id, 'theme_title': theme.theme_title, 'checkpoints': []}
             )
 
+        course_ids = [course['course_id'] for course in courses]
+        progress_by_course_id = {
+            progress.course_id: progress
+            for progress in UserCourseProgress.objects.filter(
+                user=request.user,
+                course_id__in=course_ids,
+            )
+        }
+        for index, course in enumerate(courses):
+            if course['course_id'] not in progress_by_course_id:
+                progress_by_course_id[course['course_id']] = UserCourseProgress.objects.create(
+                    user=request.user,
+                    course_id=course['course_id'],
+                    is_unlocked=(index == 0),
+                )
+
         checkpoints = []
         for course in courses:
+            progress = progress_by_course_id[course['course_id']]
+            should_be_unlocked = True
+            if progress.is_unlocked != should_be_unlocked:
+                progress.is_unlocked = should_be_unlocked
+                progress.save(update_fields=['is_unlocked', 'updated_at'])
+
+            if progress.is_completed:
+                status = 'completed'
+            elif progress.is_unlocked:
+                status = 'unlocked'
+            else:
+                status = 'locked'
+
             quiz_id = course.get('validating_quiz_id')
             checkpoints.append(
                 {
                     'course_id': course['course_id'],
                     'title': course['course_title'],
                     'map_order': course['map_order'],
-                    'status': 'unlocked',
-                    'best_score': 0,
+                    'status': status,
+                    'best_score': progress.best_score,
                     'quiz': None if quiz_id is None else {
                         'quiz_id': quiz_id,
                         'min_score_to_pass': course.get('validating_quiz__min_score_to_pass') or 0,
