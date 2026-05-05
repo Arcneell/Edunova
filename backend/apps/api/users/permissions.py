@@ -1,4 +1,4 @@
-"""Permissions DRF — garde-fous staff vs compte standard."""
+"""Permissions DRF — routes réservées au staff."""
 
 from rest_framework.permissions import BasePermission
 

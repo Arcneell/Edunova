@@ -11,15 +11,13 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.edunova.api.permissions import IsStaffUser
-from apps.edunova.api.serializers import (
+from apps.api.users.permissions import IsStaffUser
+from apps.api.users.serializers import (
     AdminUserDetailSerializer,
     AdminUserListSerializer,
     LoginSerializer,
     MeSerializer,
     MeUpdateSerializer,
-    ProfileReadSerializer,
-    ProfileUpdateSerializer,
     RegisterSerializer,
 )
 from apps.edunova.models import User
@@ -91,21 +89,6 @@ class MeView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(MeSerializer(request.user).data)
-
-
-class MeProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        profile = request.user.profile
-        return Response(ProfileReadSerializer(profile).data)
-
-    def patch(self, request):
-        profile = request.user.profile
-        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(ProfileReadSerializer(profile).data)
 
 
 class AdminUserPagination(PageNumberPagination):
