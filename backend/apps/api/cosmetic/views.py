@@ -124,6 +124,15 @@ class EquipCosmeticView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        owns_cosmetic = UserCosmeticPurchase.objects.filter(
+            user=request.user, cosmetic=cosmetic
+        ).exists()
+        if not owns_cosmetic:
+            return Response(
+                {'detail': "Vous ne possédez pas ce cosmétique."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         profile = request.user.profile
         setattr(profile, profile_field, cosmetic.cosmetic_asset_url)
         profile.save(update_fields=[profile_field])

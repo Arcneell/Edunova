@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getBadges, getMyBadges } from '../api/user/badges.js'
-import { equipCosmetic, listAllCosmetics } from '../api/user/cosmetics.js'
+import { listAllCosmetics, purchaseAndEquipCosmetic } from '../api/user/cosmetics.js'
 import { getProfile } from '../api/user/me.js'
 import { getRanks } from '../api/user/ranks.js'
 import { useAuth } from '../hooks/useAuth.js'
@@ -115,7 +115,7 @@ export default function Compte() {
     setEquipping(cosmeticId)
     setErrEquip(null)
     try {
-      await equipCosmetic(cosmeticId)
+      await purchaseAndEquipCosmetic(cosmeticId)
       await refreshMe()
       await loadAll()
     } catch (e) {
