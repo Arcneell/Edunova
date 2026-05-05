@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'apps.edunova',
+    'apps.api',
 ]
 
 AUTH_USER_MODEL = 'edunova.User'
