@@ -72,10 +72,13 @@ class QuizSubmitView(APIView):
         score = int((correct_count / total) * 100)
         passed = score >= quiz.min_score_to_pass
         coins_earned = 0
+        rank_up = False
+        current_rank = None
 
         if passed:
             coins_earned = quiz.coins_on_success
             profile = request.user.profile
+            old_rank_id = profile.rank_id
             profile.wallet_balance += coins_earned
             profile.total_xp += xp_earned
 
@@ -87,6 +90,8 @@ class QuizSubmitView(APIView):
             )
             if new_rank:
                 profile.rank = new_rank
+                rank_up = (new_rank.rank_id != old_rank_id)
+                current_rank = new_rank
             profile.save()
 
             # Attribution du badge si le quiz valide un cours et que l'utilisateur est inscrit
@@ -111,4 +116,11 @@ class QuizSubmitView(APIView):
             'passed': passed,
             'xp_earned': xp_earned if passed else 0,
             'coins_earned': coins_earned,
+            'rank_up': rank_up,
+            'rank': {
+                'rank_id': current_rank.rank_id,
+                'label': current_rank.label,
+                'stars': current_rank.stars,
+                'xp_threshold': current_rank.xp_threshold,
+            } if current_rank else None,
         })
