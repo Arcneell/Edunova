@@ -1,3 +1,5 @@
+import unicodedata
+
 from rest_framework.permissions import BasePermission
 
 # Noms de rôles normalisés — à aligner avec les données en base.
@@ -6,8 +8,23 @@ ROLE_ELEVE = 'élève'
 ROLE_ELEVE_ASCII = 'eleve'
 ROLE_UTILISATEUR = 'utilisateur'
 
-# Rôles non assignables librement à l'inscription.
-RESTRICTED_ROLES = {ROLE_FORMATEUR}
+# Noms **sans accents**, minuscules — inscription libre réservée aux profils élève /
+# apprenant (aligné sur ``is_learner_role``, + synonyme métier ``etudiant``).
+# Pas de formateur ni d'enseignant : créés par admin / équipe uniquement.
+REGISTERABLE_SIGNUP_ROLES = frozenset(
+    {
+        'utilisateur',
+        'eleve',  # élève
+        'etudiant',
+    }
+)
+
+
+def normalize_role_name_ascii(value: str | None) -> str:
+    if not value:
+        return ''
+    s = unicodedata.normalize('NFD', str(value).strip().lower())
+    return ''.join(c for c in s if unicodedata.category(c) != 'Mn')
 
 
 def normalize_role_name(value: str | None) -> str:

@@ -12,6 +12,9 @@ function normalizeRoleName(name) {
     .trim()
 }
 
+/** Rôles élève / apprenant uniquement (aligné backend REGISTERABLE_SIGNUP_ROLES). */
+const SIGNUP_ROLES_NORMALIZED = new Set(['utilisateur', 'eleve', 'etudiant'])
+
 export default function Register() {
   const navigate = useNavigate()
   const { register } = useAuth()
@@ -19,6 +22,7 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [roleId, setRoleId] = useState('')
   const [roles, setRoles] = useState([])
+  const [rolesLoadError, setRolesLoadError] = useState(null)
   const [err, setErr] = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
 
@@ -34,7 +38,7 @@ export default function Register() {
     else if (!/[^A-Za-z0-9]/.test(password)) {
       nextErrors.password = 'Le mot de passe doit contenir au moins un caractère spécial.'
     }
-    if (!roleId) nextErrors.roleId = 'Choisissez un role dans la liste.'
+    if (!roleId) nextErrors.roleId = 'Choisissez un rôle dans la liste.'
     setFieldErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -45,14 +49,19 @@ export default function Register() {
       .then((rows) => {
         if (cancelled) return
         const allRoles = Array.isArray(rows) ? rows : []
-        const allowed = allRoles.filter((r) => {
-          const n = normalizeRoleName(r.role_name)
-          return n === 'utilisateur' || n === 'formateur' || n === 'etudiant' || n === 'enseignant'
-        })
+        const allowed = allRoles.filter((r) =>
+          SIGNUP_ROLES_NORMALIZED.has(normalizeRoleName(r.role_name)),
+        )
         setRoles(allowed.length > 0 ? allowed : allRoles)
+        setRolesLoadError(null)
       })
       .catch(() => {
-        if (!cancelled) setRoles([])
+        if (!cancelled) {
+          setRoles([])
+          setRolesLoadError(
+            'Impossible de charger les rôles depuis le serveur. Vérifiez la connexion ou réessayez.',
+          )
+        }
       })
     return () => {
       cancelled = true
@@ -79,10 +88,10 @@ export default function Register() {
           <p className="page-header__eyebrow">Compte</p>
           <h1>Inscription</h1>
           <p className="page-header__lead">
-            Créez votre accès en quelques secondes en choisissant votre profil.
+            Inscription réservée aux comptes élèves / apprenants. Les comptes formateur sont créés par l’équipe.
           </p>
           <ul className="auth-points">
-            <li>Choix du rôle à l'inscription</li>
+            <li>Choix du profil apprenant proposé dans la liste</li>
             <li>Mot de passe sécurisé (8+ caractères)</li>
             <li>Accès immédiat après création du compte</li>
           </ul>
@@ -141,6 +150,11 @@ export default function Register() {
               </select>
               {fieldErrors.roleId ? <span className="field-error">{fieldErrors.roleId}</span> : null}
             </label>
+            {rolesLoadError ? (
+              <p className="form-alert form-alert--error" role="alert">
+                {rolesLoadError}
+              </p>
+            ) : null}
             {err ? <p className="form-alert form-alert--error">{err}</p> : null}
             <button type="submit">Créer le compte</button>
           </form>

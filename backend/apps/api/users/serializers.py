@@ -7,7 +7,12 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from apps.api.profiles.serializers import ProfileReadSerializer
-from apps.api.users.permissions import RESTRICTED_ROLES, is_formateur_role, is_learner_role
+from apps.api.users.permissions import (
+    REGISTERABLE_SIGNUP_ROLES,
+    normalize_role_name_ascii,
+    is_formateur_role,
+    is_learner_role,
+)
 from apps.edunova.models import Role, User
 
 
@@ -67,10 +72,14 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate(self, attrs: dict) -> dict:
         role = attrs.get('role')
-        if role and role.role_name.strip().lower() in RESTRICTED_ROLES:
-            raise serializers.ValidationError(
-                {'role_id': 'Ce rôle ne peut pas être assigné à l\'inscription.'}
-            )
+        if role:
+            key = normalize_role_name_ascii(role.role_name)
+            if key not in REGISTERABLE_SIGNUP_ROLES:
+                raise serializers.ValidationError(
+                    {
+                        'role_id': 'Ce rôle ne peut pas être choisi à l’inscription.'
+                    }
+                )
         return attrs
 
     def create(self, validated_data: dict) -> User:
