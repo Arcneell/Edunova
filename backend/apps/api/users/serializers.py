@@ -97,13 +97,26 @@ class RegisterSerializer(serializers.Serializer):
         if role is None:
             role = Role.objects.filter(role_name__iexact='élève').first()
             if role is None:
+                role = Role.objects.filter(role_name__iexact='utilisateur').first()
+            if role is None:
                 role = Role.objects.order_by('role_id').first()
             if role is None:
                 raise serializers.ValidationError(
                     {'role_id': 'Aucun rôle par défaut en base : créez un rôle ou indiquez role_id.'}
                 )
 
-        user = User(email=email, role=role)
+        # Lie automatiquement les apprenants à un formateur référent (le moins
+        # chargé) pour qu'ils voient un parcours dès l'inscription publique.
+        formateur_default: User | None = None
+        if is_learner_role(role.role_name):
+            formateur_default = (
+                User.objects
+                .filter(role__role_name__iexact='formateur', is_active=True)
+                .order_by('apprenants__user_id', 'user_id')
+                .first()
+            )
+
+        user = User(email=email, role=role, formateur=formateur_default)
         user.set_password(password)
         user.save()
         return user
