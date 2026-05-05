@@ -24,6 +24,9 @@ from apps.api.users.serializers import (
 from apps.edunova.models import ActivityLog, Role, User
 
 
+ACTION_LABELS = {choice[0]: choice[1] for choice in ActivityLog.Action.choices}
+
+
 class RegisterThrottle(ScopedRateThrottle):
     scope = 'register'
 
@@ -152,3 +155,58 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = AdminUserDetailSerializer
     lookup_field = 'user_id'
     queryset = User.objects.select_related('role', 'profile', 'profile__rank')
+
+class AdminLogPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
+class AdminActivityLogListView(generics.ListAPIView):
+    """GET /api/admin/logs/
+
+    Liste paginée des logs d'activité, du plus récent au plus ancien.
+    Paramètres optionnels :
+      - action  : filtrer par type d'action (ex. ?action=login)
+      - user_id : filtrer par utilisateur
+      - since   : ISO 8601, logs postérieurs à cette date (ex. ?since=2026-05-05T10:00:00Z)
+    """
+
+    permission_classes = [IsAuthenticated, IsStaffUser]
+    pagination_class = AdminLogPagination
+
+    def get_queryset(self):
+        qs = ActivityLog.objects.select_related('user').order_by('-created_at')
+        action = self.request.query_params.get('action')
+        user_id = self.request.query_params.get('user_id')
+        since = self.request.query_params.get('since')
+        if action:
+            qs = qs.filter(action=action)
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+        if since:
+            qs = qs.filter(created_at__gt=since)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
+        results = [
+            {
+                'log_id': log.log_id,
+                'user_id': log.user_id,
+                'user_email': log.user.email if log.user else None,
+                'action': log.action,
+                'action_label': ACTION_LABELS.get(log.action, log.action),
+                'metadata': log.metadata,
+                'ip_address': str(log.ip_address) if log.ip_address else None,
+                'created_at': log.created_at.isoformat(),
+            }
+            for log in items
+        ]
+
+        if page is not None:
+            return self.get_paginated_response(results)
+        return Response(results)

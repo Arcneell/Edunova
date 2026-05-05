@@ -21,4 +21,5 @@ urlpatterns = [
     path('me/equip/', EquipCosmeticView.as_view(), name='api_me_equip'),
     path('admin/users/', views.AdminUserListView.as_view(), name='api_admin_users_list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='api_admin_users_detail'),
+    path('admin/logs/', views.AdminActivityLogListView.as_view(), name='api_admin_logs'),
 ]
