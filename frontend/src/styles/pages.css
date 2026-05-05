@@ -38,12 +38,12 @@
 
 /* Cards */
 .card {
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--brand-purple) 18%, var(--border));
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgb(206, 202, 234);
   border-radius: calc(var(--radius) + 2px);
   box-shadow:
     var(--shadow-sm),
-    0 12px 35px color-mix(in srgb, var(--brand-blue) 10%, transparent);
+    0 12px 35px rgba(27, 23, 255, 0.1);
   padding: 1.5rem 1.35rem;
   backdrop-filter: blur(8px);
 }
@@ -89,13 +89,8 @@
   padding: clamp(1.25rem, 3vw, 2rem);
   border-radius: 22px;
   margin-bottom: 1.25rem;
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, var(--brand-blue) 16%, var(--surface)),
-    color-mix(in srgb, var(--brand-purple) 15%, var(--surface)),
-    color-mix(in srgb, var(--brand-pink) 12%, var(--surface))
-  );
-  border: 1px solid color-mix(in srgb, var(--brand-purple) 20%, var(--border));
+  background: linear-gradient(125deg, #eff0ff, #f4f0fc, #fff5fa);
+  border: 1px solid rgb(204, 199, 234);
   box-shadow: var(--shadow-md);
 }
 
@@ -122,8 +117,8 @@
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-h);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  border: 1px solid color-mix(in srgb, var(--brand-blue) 20%, var(--border));
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgb(186, 190, 243);
 }
 
 @media (min-width: 640px) {
@@ -214,8 +209,8 @@
 .tile {
   padding: 1.15rem 1.2rem;
   border-radius: calc(var(--radius) + 2px);
-  border: 1px solid color-mix(in srgb, var(--brand-purple) 20%, var(--border));
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border: 1px solid rgb(204, 199, 234);
+  background: rgba(255, 255, 255, 0.9);
   text-align: left;
   transition:
     transform 0.15s ease,
@@ -239,8 +234,8 @@
   text-transform: uppercase;
   font-weight: 700;
   color: var(--brand-purple);
-  border: 1px solid color-mix(in srgb, var(--brand-purple) 25%, transparent);
-  background: color-mix(in srgb, var(--brand-purple) 10%, transparent);
+  border: 1px solid rgba(114, 66, 208, 0.25);
+  background: rgba(114, 66, 208, 0.1);
 }
 
 .tile h3 {
@@ -271,12 +266,12 @@
   margin-top: 1.2rem;
   padding: 1rem 1.1rem;
   border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--brand-blue) 22%, var(--border));
+  border: 1px solid rgb(182, 186, 243);
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--brand-blue) 9%, transparent),
-    color-mix(in srgb, var(--brand-purple) 10%, transparent),
-    color-mix(in srgb, var(--brand-pink) 8%, transparent)
+    rgba(27, 23, 255, 0.09),
+    rgba(114, 66, 208, 0.1),
+    rgba(255, 0, 122, 0.08)
   );
 }
 
@@ -405,12 +400,12 @@
   margin-bottom: 1rem;
   padding: 1.25rem;
   border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--brand-blue) 20%, var(--border));
+  border: 1px solid rgb(186, 190, 243);
   background: linear-gradient(
     130deg,
-    color-mix(in srgb, var(--brand-blue) 8%, transparent),
-    color-mix(in srgb, var(--brand-purple) 9%, transparent),
-    color-mix(in srgb, var(--brand-pink) 7%, transparent)
+    rgba(27, 23, 255, 0.08),
+    rgba(114, 66, 208, 0.09),
+    rgba(255, 0, 122, 0.07)
   );
 }
 
@@ -435,7 +430,7 @@
 .kv--modern dt,
 .kv--modern dd {
   padding: 0.45rem 0;
-  border-bottom: 1px dashed color-mix(in srgb, var(--brand-purple) 20%, transparent);
+  border-bottom: 1px dashed rgba(114, 66, 208, 0.2);
 }
 
 .kv--modern dd:last-child,

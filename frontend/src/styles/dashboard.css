@@ -14,9 +14,9 @@
   height: 280px;
   border-radius: 50%;
   background:
-    radial-gradient(ellipse 65% 70% at 15% 40%, color-mix(in srgb, var(--dash-blue) 35%, transparent), transparent 62%),
-    radial-gradient(ellipse 55% 60% at 85% 20%, color-mix(in srgb, var(--dash-pink) 28%, transparent), transparent 58%),
-    radial-gradient(ellipse 50% 55% at 55% 80%, color-mix(in srgb, var(--dash-purple) 32%, transparent), transparent 65%);
+    radial-gradient(ellipse 65% 70% at 15% 40%, rgba(27, 23, 255, 0.35), transparent 62%),
+    radial-gradient(ellipse 55% 60% at 85% 20%, rgba(255, 0, 122, 0.28), transparent 58%),
+    radial-gradient(ellipse 50% 55% at 55% 80%, rgba(114, 66, 208, 0.32), transparent 65%);
   pointer-events: none;
   z-index: -1;
 }
@@ -31,8 +31,8 @@
   background: linear-gradient(125deg, var(--dash-blue) 0%, var(--dash-purple) 52%, var(--dash-pink) 100%);
   color: #fff;
   box-shadow:
-    0 20px 50px color-mix(in srgb, var(--dash-blue) 28%, transparent),
-    0 0 0 1px color-mix(in srgb, #fff 22%, transparent) inset;
+    0 20px 50px rgba(27, 23, 255, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.22) inset;
   position: relative;
   overflow: hidden;
 }
@@ -48,7 +48,7 @@
   top: -40%;
   width: 55%;
   height: 180%;
-  background: radial-gradient(circle at 30% 30%, color-mix(in srgb, #fff 18%, transparent), transparent 62%);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), transparent 62%);
   pointer-events: none;
 }
 
@@ -58,7 +58,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: color-mix(in srgb, #fff 78%, transparent);
+  color: rgba(255, 255, 255, 0.78);
   margin-bottom: 0.5rem;
 }
 
@@ -76,7 +76,7 @@
   max-width: 36rem;
   font-size: 0.9625rem;
   line-height: 1.55;
-  color: color-mix(in srgb, #fff 82%, transparent);
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .dash-stat-grid {
@@ -98,21 +98,21 @@
   border: 1px solid transparent;
   background: linear-gradient(
       145deg,
-      color-mix(in srgb, var(--stat) 09%, #fff),
-      color-mix(in srgb, var(--stat) 04%, #fff)
+      rgb(48, 44, 255),
+      rgb(36, 32, 255)
     )
     padding-box;
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--stat) 12%, transparent) inset,
-    0 8px 24px color-mix(in srgb, var(--stat) 12%, transparent);
+    0 1px 0 rgba(27, 23, 255, 0.12) inset,
+    0 8px 24px rgba(27, 23, 255, 0.12);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .dash-stat:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--stat) 16%, transparent) inset,
-    0 14px 32px color-mix(in srgb, var(--stat) 18%, transparent);
+    0 1px 0 rgba(27, 23, 255, 0.16) inset,
+    0 14px 32px rgba(27, 23, 255, 0.18);
 }
 
 .dash-stat--blue {
@@ -133,15 +133,15 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--stat) 62%, var(--dash-blue));
+  color: rgb(60, 39, 237);
 }
 
 .dash-stat--purple .dash-stat__label {
-  color: color-mix(in srgb, var(--dash-purple) 65%, var(--dash-blue));
+  color: rgb(57, 38, 239);
 }
 
 .dash-stat--pink .dash-stat__label {
-  color: color-mix(in srgb, var(--dash-pink) 62%, var(--dash-purple));
+  color: rgb(168, 41, 175);
 }
 
 .dash-stat__value {
@@ -158,9 +158,9 @@
   padding: 0.9rem 1.1rem;
   margin-bottom: 1.25rem;
   border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--dash-pink) 42%, transparent);
-  background: color-mix(in srgb, var(--dash-pink) 09%, #fff);
-  color: color-mix(in srgb, var(--dash-pink) 92%, var(--dash-blue));
+  border: 1px solid rgba(255, 0, 122, 0.42);
+  background: rgb(255, 232, 243);
+  color: rgb(45, 21, 244);
   font-size: 0.895rem;
   font-weight: 500;
 }
@@ -169,55 +169,55 @@
   .dash-stat {
     background: linear-gradient(
         155deg,
-        color-mix(in srgb, var(--stat) 14%, transparent),
-        color-mix(in srgb, var(--stat) 06%, transparent)
+        rgba(27, 23, 255, 0.14),
+        rgba(27, 23, 255, 0.06)
       )
       padding-box;
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--stat) 22%, transparent) inset,
-      0 14px 40px color-mix(in srgb, #000 45%, transparent);
+      0 0 0 1px rgba(27, 23, 255, 0.22) inset,
+      0 14px 40px rgba(0, 0, 0, 0.45);
   }
 
   .dash-stat__label {
-    color: color-mix(in srgb, var(--stat) 78%, #fff);
+    color: rgb(205, 204, 255);
   }
 
   .dash-stat__value {
-    color: color-mix(in srgb, var(--stat) 88%, #fff);
+    color: rgb(228, 227, 255);
   }
 
   .dash-alert {
-    background: color-mix(in srgb, var(--dash-pink) 14%, transparent);
-    color: color-mix(in srgb, var(--dash-pink) 88%, #fff);
-    border-color: color-mix(in srgb, var(--dash-pink) 48%, transparent);
+    background: rgba(255, 0, 122, 0.14);
+    color: rgb(255, 31, 138);
+    border-color: rgba(255, 0, 122, 0.48);
   }
 }
 
 .dash-panel {
   border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--dash-purple) 18%, #e8e8f0);
+  border: 1px solid rgb(135, 96, 214);
   background: linear-gradient(
     165deg,
-    color-mix(in srgb, #fff 96%, var(--dash-blue)),
-    color-mix(in srgb, #fff 98%, var(--dash-purple))
+    rgb(36, 32, 255),
+    rgb(117, 70, 209)
   );
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 90%, transparent) inset,
-    0 22px 50px color-mix(in srgb, var(--dash-blue) 08%, transparent);
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 22px 50px rgba(27, 23, 255, 0.08);
   overflow: hidden;
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-panel {
-    border-color: color-mix(in srgb, var(--dash-purple) 38%, transparent);
+    border-color: rgba(114, 66, 208, 0.38);
     background: linear-gradient(
       165deg,
-      color-mix(in srgb, var(--dash-blue) 12%, transparent),
-      color-mix(in srgb, var(--dash-purple) 08%, transparent)
+      rgba(27, 23, 255, 0.12),
+      rgba(114, 66, 208, 0.08)
     );
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #fff 06%, transparent) inset,
-      0 26px 60px color-mix(in srgb, var(--dash-blue) 55%, transparent);
+      0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+      0 26px 60px rgba(27, 23, 255, 0.55);
   }
 }
 
@@ -228,7 +228,7 @@
   justify-content: space-between;
   gap: 0.5rem 1rem;
   padding: 1.15rem 1.25rem 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--dash-purple) 14%, transparent);
+  border-bottom: 1px solid rgba(114, 66, 208, 0.14);
 }
 
 @media (min-width: 640px) {
@@ -247,17 +247,18 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .dash-panel__meta {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: color-mix(in srgb, var(--dash-purple) 55%, var(--dash-blue));
+  color: rgb(66, 42, 234);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-panel__meta {
-    color: color-mix(in srgb, var(--dash-purple) 72%, #fff);
+    color: rgb(153, 119, 221);
   }
 }
 
@@ -271,12 +272,12 @@
   padding: 2.5rem 1.5rem;
   text-align: center;
   font-size: 0.9375rem;
-  color: color-mix(in srgb, var(--dash-purple) 52%, var(--dash-blue));
+  color: rgb(69, 44, 232);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-empty {
-    color: color-mix(in srgb, #fff 55%, var(--dash-purple));
+    color: rgb(177, 151, 229);
   }
 }
 
@@ -291,7 +292,7 @@
   padding: 0.85rem 1rem;
   text-align: left;
   vertical-align: middle;
-  border-bottom: 1px solid color-mix(in srgb, var(--dash-purple) 12%, transparent);
+  border-bottom: 1px solid rgba(114, 66, 208, 0.12);
 }
 
 @media (min-width: 640px) {
@@ -314,15 +315,15 @@
   white-space: nowrap;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--dash-blue) 09%, transparent),
-    color-mix(in srgb, var(--dash-purple) 06%, transparent)
+    rgba(27, 23, 255, 0.09),
+    rgba(114, 66, 208, 0.06)
   );
-  color: color-mix(in srgb, var(--dash-blue) 78%, var(--dash-purple));
+  color: rgb(95, 57, 218);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-table th {
-    color: color-mix(in srgb, var(--dash-purple) 85%, #fff);
+    color: rgb(135, 94, 215);
   }
 }
 
@@ -331,7 +332,7 @@
 }
 
 .dash-table tbody tr:hover {
-  background: color-mix(in srgb, var(--dash-purple) 06%, transparent);
+  background: rgba(114, 66, 208, 0.06);
 }
 
 .dash-table tbody tr:last-child td {
@@ -342,35 +343,35 @@
   font-family: var(--mono);
   font-size: 0.78rem;
   font-weight: 600;
-  color: color-mix(in srgb, var(--dash-blue) 85%, transparent);
+  color: rgba(27, 23, 255, 0.85);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-table__id {
-    color: color-mix(in srgb, #fff 70%, var(--dash-blue));
+    color: rgb(95, 93, 255);
   }
 }
 
 .dash-table__email {
   font-weight: 500;
-  color: color-mix(in srgb, var(--dash-blue) 42%, var(--dash-purple));
+  color: rgb(64, 41, 235);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-table__email {
-    color: color-mix(in srgb, #fff 88%, var(--dash-blue));
+    color: rgb(54, 51, 255);
   }
 }
 
 .dash-table__date {
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--dash-purple) 58%, var(--dash-blue));
+  color: rgb(64, 41, 235);
   white-space: nowrap;
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-table__date {
-    color: color-mix(in srgb, #fff 72%, var(--dash-purple));
+    color: rgb(153, 119, 221);
   }
 }
 
@@ -385,39 +386,39 @@
 }
 
 .dash-badge--purple {
-  background: color-mix(in srgb, var(--dash-purple) 14%, transparent);
+  background: rgba(114, 66, 208, 0.14);
   color: var(--dash-purple);
-  border: 1px solid color-mix(in srgb, var(--dash-purple) 28%, transparent);
+  border: 1px solid rgba(114, 66, 208, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-badge--purple {
-    background: color-mix(in srgb, var(--dash-purple) 22%, transparent);
-    color: color-mix(in srgb, #fff 92%, var(--dash-purple));
+    background: rgba(114, 66, 208, 0.22);
+    color: rgb(125, 81, 212);
   }
 }
 
 .dash-badge--blue {
-  background: color-mix(in srgb, var(--dash-blue) 14%, transparent);
+  background: rgba(27, 23, 255, 0.14);
   color: var(--dash-blue);
-  border: 1px solid color-mix(in srgb, var(--dash-blue) 28%, transparent);
+  border: 1px solid rgba(27, 23, 255, 0.28);
 }
 
 .dash-badge--pink {
-  background: color-mix(in srgb, var(--dash-pink) 13%, transparent);
+  background: rgba(255, 0, 122, 0.13);
   color: var(--dash-pink);
-  border: 1px solid color-mix(in srgb, var(--dash-pink) 28%, transparent);
+  border: 1px solid rgba(255, 0, 122, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-badge--blue {
-    background: color-mix(in srgb, var(--dash-blue) 22%, transparent);
-    color: color-mix(in srgb, #fff 88%, var(--dash-blue));
+    background: rgba(27, 23, 255, 0.22);
+    color: rgb(54, 51, 255);
   }
 
   .dash-badge--pink {
-    background: color-mix(in srgb, var(--dash-pink) 22%, transparent);
-    color: color-mix(in srgb, #fff 88%, var(--dash-pink));
+    background: rgba(255, 0, 122, 0.22);
+    color: rgb(255, 31, 138);
   }
 }
 
@@ -435,34 +436,34 @@
 }
 
 .dash-pill--blue {
-  background: color-mix(in srgb, var(--dash-blue) 14%, transparent);
+  background: rgba(27, 23, 255, 0.14);
   color: var(--dash-blue);
-  border: 1px solid color-mix(in srgb, var(--dash-blue) 22%, transparent);
+  border: 1px solid rgba(27, 23, 255, 0.22);
 }
 
 .dash-pill--pink {
-  background: color-mix(in srgb, var(--dash-pink) 13%, transparent);
+  background: rgba(255, 0, 122, 0.13);
   color: var(--dash-pink);
-  border: 1px solid color-mix(in srgb, var(--dash-pink) 28%, transparent);
+  border: 1px solid rgba(255, 0, 122, 0.28);
 }
 
 .dash-pill--muted {
-  background: color-mix(in srgb, var(--dash-purple) 08%, transparent);
-  color: color-mix(in srgb, var(--dash-purple) 48%, var(--dash-blue));
-  border: 1px solid color-mix(in srgb, var(--dash-purple) 14%, transparent);
+  background: rgba(114, 66, 208, 0.08);
+  color: rgb(72, 45, 231);
+  border: 1px solid rgba(114, 66, 208, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-pill--blue {
-    color: color-mix(in srgb, #fff 88%, var(--dash-blue));
+    color: rgb(54, 51, 255);
   }
 
   .dash-pill--pink {
-    color: color-mix(in srgb, #fff 88%, var(--dash-pink));
+    color: rgb(255, 31, 138);
   }
 
   .dash-pill--muted {
-    color: color-mix(in srgb, #fff 62%, var(--dash-purple));
+    color: rgb(168, 138, 226);
   }
 }
 
@@ -473,8 +474,8 @@
   justify-content: space-between;
   gap: 0.85rem;
   padding: 1rem 1.25rem 1.2rem;
-  border-top: 1px solid color-mix(in srgb, var(--dash-purple) 14%, transparent);
-  background: color-mix(in srgb, var(--dash-blue) 03%, transparent);
+  border-top: 1px solid rgba(114, 66, 208, 0.14);
+  background: rgba(27, 23, 255, 0.03);
 }
 
 .dash-pager__btn {
@@ -483,9 +484,9 @@
   font-size: 0.8325rem;
   padding: 0.52rem 1.15rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--dash-purple) 28%, transparent);
+  border: 1px solid rgba(114, 66, 208, 0.28);
   background: #fff;
-  color: color-mix(in srgb, var(--dash-purple) 88%, var(--dash-blue));
+  color: rgb(37, 28, 249);
   cursor: pointer;
   transition:
     transform 0.12s ease,
@@ -497,7 +498,7 @@
 .dash-pager__btn:hover:not(:disabled) {
   border-color: var(--dash-purple);
   color: var(--dash-purple);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--dash-purple) 18%, transparent);
+  box-shadow: 0 6px 18px rgba(114, 66, 208, 0.18);
 }
 
 .dash-pager__btn:active:not(:disabled) {
@@ -519,25 +520,25 @@
   border-color: transparent;
   color: #fff;
   box-shadow:
-    0 8px 22px color-mix(in srgb, var(--dash-pink) 32%, transparent),
-    0 0 0 1px color-mix(in srgb, #fff 22%, transparent) inset;
+    0 8px 22px rgba(255, 0, 122, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.22) inset;
 }
 
 @media (prefers-color-scheme: dark) {
   .dash-pager__btn {
-    background: color-mix(in srgb, var(--dash-purple) 12%, transparent);
-    color: color-mix(in srgb, #fff 94%, var(--dash-purple));
+    background: rgba(114, 66, 208, 0.12);
+    color: rgb(122, 77, 211);
   }
 
   .dash-pager {
-    background: color-mix(in srgb, var(--dash-blue) 22%, transparent);
+    background: rgba(27, 23, 255, 0.22);
   }
 }
 
 .dash-pager__info {
   font-size: 0.8325rem;
   font-weight: 500;
-  color: color-mix(in srgb, var(--dash-purple) 58%, var(--dash-blue));
+  color: rgb(64, 41, 235);
 }
 
 .dash-pager__info strong {
@@ -547,11 +548,11 @@
 
 @media (prefers-color-scheme: dark) {
   .dash-pager__info {
-    color: color-mix(in srgb, #fff 74%, var(--dash-purple));
+    color: rgb(151, 115, 220);
   }
 
   .dash-pager__info strong {
-    color: color-mix(in srgb, #fff 88%, var(--dash-blue));
+    color: rgb(54, 51, 255);
   }
 }
 
@@ -565,9 +566,9 @@
   border-radius: 10px;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--dash-purple) 10%, transparent) 0%,
-    color-mix(in srgb, var(--dash-pink) 12%, transparent) 50%,
-    color-mix(in srgb, var(--dash-blue) 10%, transparent) 100%
+    rgba(114, 66, 208, 0.1) 0%,
+    rgba(255, 0, 122, 0.12) 50%,
+    rgba(27, 23, 255, 0.1) 100%
   );
   background-size: 200% 100%;
   animation: dash-skeleton-shimmer 1.25s ease-in-out infinite;

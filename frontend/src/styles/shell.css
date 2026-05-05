@@ -7,12 +7,12 @@
     radial-gradient(ellipse 120% 80% at 100% -20%, var(--accent-soft), transparent 50%),
     radial-gradient(
       ellipse 90% 60% at -10% 50%,
-      color-mix(in srgb, var(--brand-purple) 9%, transparent),
+      rgba(114, 66, 208, 0.09),
       transparent 45%
     ),
     radial-gradient(
       ellipse 70% 50% at 100% 100%,
-      color-mix(in srgb, var(--brand-pink) 5%, transparent),
+      rgba(255, 0, 122, 0.05),
       transparent 50%
     ),
     var(--bg);
@@ -24,12 +24,12 @@
       radial-gradient(ellipse 120% 80% at 100% -20%, var(--accent-soft), transparent 55%),
       radial-gradient(
         ellipse 90% 60% at -10% 40%,
-        color-mix(in srgb, var(--brand-blue) 12%, transparent),
+        rgba(27, 23, 255, 0.12),
         transparent 45%
       ),
       radial-gradient(
         ellipse 70% 50% at 100% 100%,
-        color-mix(in srgb, var(--brand-pink) 8%, transparent),
+        rgba(255, 0, 122, 0.08),
         transparent 50%
       ),
       var(--bg);
@@ -56,7 +56,7 @@
   border-top: 1px solid var(--border);
   font-size: 0.875rem;
   color: var(--text-muted);
-  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .app-footer__inner {
