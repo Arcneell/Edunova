@@ -189,7 +189,11 @@ class FormateurQuizListCreateView(APIView):
         ActivityLog.objects.create(
             user=request.user,
             action=ActivityLog.Action.QUIZ_CREATE,
-            metadata={'quiz_id': quiz.quiz_id, 'title': quiz.quiz_title},
+            metadata={
+                'quiz_id': quiz.quiz_id,
+                'min_score_to_pass': quiz.min_score_to_pass,
+                'coins_on_success': quiz.coins_on_success,
+            },
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
