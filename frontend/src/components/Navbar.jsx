@@ -94,6 +94,13 @@ export default function Navbar() {
               <NavLink to="/compte" className={navLinkClass} onClick={closeMobile}>
                 Mon compte
               </NavLink>
+              <NavLink
+                to="/courses/ma-thematiques"
+                className={navLinkClass}
+                onClick={closeMobile}
+              >
+                Ma map
+              </NavLink>
               {canAccessLearningAdmin ? (
                 <NavLink to="/admin" className={navLinkClass} onClick={closeMobile}>
                   Dashboard

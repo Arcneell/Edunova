@@ -7,6 +7,7 @@ import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Compte from './pages/Compte.jsx'
+import CourseMap from './pages/CourseMap.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
 import AdminCourses from './pages/AdminCourses.jsx'
@@ -24,6 +25,14 @@ export default function App() {
           element={
             <RequireAuth>
               <Compte />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/courses/ma-thematiques"
+          element={
+            <RequireAuth>
+              <CourseMap />
             </RequireAuth>
           }
         />

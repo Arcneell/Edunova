@@ -1529,3 +1529,73 @@
     background-position: -100% 0;
   }
 }
+
+.course-map {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 900px) {
+  .course-map {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.course-node {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.course-node--completed {
+  border-color: color-mix(in srgb, var(--brand-purple) 40%, var(--border));
+}
+
+.course-node--locked {
+  opacity: 0.72;
+}
+
+.course-node__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.course-node__order {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.course-node h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.course-quiz {
+  margin-top: 1rem;
+}
+
+.quiz-question {
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.quiz-question legend {
+  font-weight: 600;
+  padding: 0 0.4rem;
+}
+
+.quiz-answer {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.5rem;
+  font-size: 0.92rem;
+}

@@ -8,6 +8,8 @@ const demoCourses = [
     level: 'Débutant',
     lessons: 12,
     status: 'Publié',
+    authorId: 1,
+    authorName: 'Admin',
   },
   {
     id: 'CRS-205',
@@ -15,6 +17,8 @@ const demoCourses = [
     level: 'Intermédiaire',
     lessons: 18,
     status: 'Brouillon',
+    authorId: 2,
+    authorName: 'Formateur principal',
   },
   {
     id: 'CRS-330',
@@ -22,6 +26,8 @@ const demoCourses = [
     level: 'Avancé',
     lessons: 15,
     status: 'Publié',
+    authorId: 3,
+    authorName: 'Formateur sécurité',
   },
 ]
 
@@ -29,8 +35,22 @@ function adminLinkClass({ isActive }) {
   return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
 }
 
+function normalizeRoleName(name) {
+  return String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function isTrainer(user) {
+  return normalizeRoleName(user?.role?.role_name) === 'formateur'
+}
+
 export default function AdminCourses() {
   const { user } = useAuth()
+  const currentUserId = user?.user_id ?? null
+  const trainerAccount = isTrainer(user)
 
   return (
     <div className="page">
@@ -61,26 +81,39 @@ export default function AdminCourses() {
 
       <section className="admin-cards">
         {demoCourses.map((course) => (
-          <article key={course.id} className="card admin-card">
-            <div className="admin-card__head">
-              <h2>{course.title}</h2>
-              <span className="dash-badge dash-badge--purple">{course.status}</span>
-            </div>
-            <p className="muted">
-              {course.id} · Niveau {course.level} · {course.lessons} leçons
-            </p>
-            <div className="hero-actions admin-card__actions">
-              <button type="button" className="btn btn--secondary">
-                Modifier
-              </button>
-              <button type="button" className="btn btn--secondary">
-                Dupliquer
-              </button>
-              <Link to="/admin/quizz" className="btn btn--primary">
-                Gérer les quiz
-              </Link>
-            </div>
-          </article>
+          (() => {
+            const canEditOrDelete = !trainerAccount || course.authorId === currentUserId
+
+            return (
+              <article key={course.id} className="card admin-card">
+                <div className="admin-card__head">
+                  <h2>{course.title}</h2>
+                  <span className="dash-badge dash-badge--purple">{course.status}</span>
+                </div>
+                <p className="muted">
+                  {course.id} · Niveau {course.level} · {course.lessons} leçons
+                </p>
+                <p className="muted">Créé par {course.authorName}</p>
+                {trainerAccount && !canEditOrDelete ? (
+                  <p className="muted">Cours en lecture seule : créé par un autre formateur.</p>
+                ) : null}
+                <div className="hero-actions admin-card__actions">
+                  <button type="button" className="btn btn--secondary" disabled={!canEditOrDelete}>
+                    Modifier
+                  </button>
+                  <button type="button" className="btn btn--secondary">
+                    Dupliquer
+                  </button>
+                  <button type="button" className="btn btn--secondary" disabled={!canEditOrDelete}>
+                    Supprimer
+                  </button>
+                  <Link to="/admin/quizz" className="btn btn--primary">
+                    Gérer les quiz
+                  </Link>
+                </div>
+              </article>
+            )
+          })()
         ))}
       </section>
     </div>
