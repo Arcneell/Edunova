@@ -1,126 +1,165 @@
-# APIs Edunova — version simple (MVP)
+# APIs Edunova
 
-Objectif : **peu de routes**, vite codées avec Django REST Framework, **comportement complet côté élève**.  
-Les **données de référence** (rôles, thèmes, cours, quiz, questions, badges, cosmétiques) peuvent être **créées / modifiées dans l’admin Django** pour éviter de multiplier les ViewSets.
-
-Préfixe **`/api/`**. Auth : **`IsAuthenticated`** sur tout sauf `register`, `login` et lectures publiques si tu les ouvres sans compte.
+Préfixe **`/api/`**. Auth : **`IsAuthenticated`** sur tout sauf `register`, `login` et `health`.  
+Sessions Django + cookie CSRF. Erreurs DRF : `{ "detail": "..." }` ou erreurs par champ.
 
 ---
 
-## Convention minimale
-
-- JSON `application/json`
-- Connexion : au plus simple, **sessions Django** (`POST login` puis cookie) *ou* un seul JWT access sans refresh (à toi de choisir une option)
-- Erreurs DRF : `{ "detail": "..." }` ou erreurs par champ
-
----
 
 ## 1. Auth & compte
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `POST` | `/api/auth/register/` | `email`, `password`, `role_id` (ou rôle défaut côté serveur) → crée `User` + `Profile` |
-| `POST` | `/api/auth/login/` | `email`, `password` → session ou token |
-| `POST` | `/api/auth/logout/` | Déconnexion (si session / invalider token selon ta stack) |
-| `GET` | `/api/me/` | Infos utilisateur connecté : `user_id`, `email`, `role` (léger, sans mot de passe) |
-| `PATCH` | `/api/me/` | Ex. mise à jour `email` si tu le permets |
-
-*Pas de reset mot de passe ni refresh JWT dans cette version (ajout futur si besoin).*
+| Méthode | Chemin | Auth | Description |
+|---------|--------|------|-------------|
+| `GET` | `/api/auth/csrf/` | Non | Récupérer le cookie CSRF (SPA) |
+| `POST` | `/api/auth/register/` | Non | `email`, `password`, `role_id` optionnel → crée `User` + `Profile` (rôle `élève` par défaut ; rôle `formateur` interdit à l'inscription) |
+| `POST` | `/api/auth/login/` | Non | `email`, `password` → session |
+| `POST` | `/api/auth/logout/` | Oui | Déconnexion |
+| `GET` | `/api/me/` | Oui | `user_id`, `email`, `role` |
+| `PATCH` | `/api/me/` | Oui | Mise à jour `email` |
 
 ---
 
-## 2. Lecture utile au front (liste / détail courts)
+## 2. Référentiels (lecture)
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `GET` | `/api/roles/` | Liste des rôles (ex. inscription) |
-| `GET` | `/api/ranks/` | Liste des rangs (carte progression) |
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/roles/` | Liste des rôles |
+| `GET` | `/api/ranks/` | Liste des rangs triés par seuil XP |
 | `GET` | `/api/themes/` | Liste des thèmes |
-| `GET` | `/api/badges/` | Catalogue badges |
-| `GET` | `/api/cosmetics/` | Liste cosmétiques (boutique) |
+| `GET` | `/api/badges/` | Catalogue des badges |
+| `GET` | `/api/cosmetics/` | Catalogue des cosmétiques |
 
 ---
 
-## 3. Profil joueur (`Profile`)
+## 3. Profil joueur
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
 | `GET` | `/api/me/profile/` | `total_xp`, `wallet_balance`, `current_avatar_url`, `current_banner_url`, `current_streak`, `rank` |
-| `PATCH` | `/api/me/profile/` | Mettre à jour URLs avatar / bannière affichées |
+| `PATCH` | `/api/me/profile/` | Mettre à jour `current_avatar_url` / `current_banner_url` |
 
-*L’XP, les pièces et le badge après quiz : mis à jour **dans la vue** `POST …/quiz/submit/` (pas d’endpoint séparé pour l’instant).*
-
----
-
-## 4. Badges du joueur (`UserBadge`)
-
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `GET` | `/api/me/badges/` | Liste des badges obtenus avec `earned_at` |
+*XP et pièces mis à jour dans `POST …/submit/`.*
 
 ---
 
-## 5. Boutique (`Cosmetic` + achat)
+## 4. Badges & achats du joueur
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `POST` | `/api/cosmetics/purchase/` | Corps : `{ "cosmetic_id": <id> }` — vérifie le solde, débite `wallet_balance`, crée `UserCosmeticPurchase`, idempotence : erreur si déjà acheté |
-
-(Optionnel vite fait : `GET /api/me/purchases/` pour l’historique — même query que le `through`, une ligne de plus.)
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/me/badges/` | Badges obtenus avec `earned_at` |
+| `GET` | `/api/me/purchases/` | Historique des achats cosmétiques |
 
 ---
 
-## 6. Cours & parcours
+## 5. Boutique
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `GET` | `/api/courses/` | Liste ; query optionnelle `?theme=<id>` |
-| `GET` | `/api/courses/<course_id>/` | Détail (texte cours + ids quiz / badge / thème) |
-| `GET` | `/api/me/courses/` | Cours suivis (via `CourseEnrollment`) |
-| `POST` | `/api/courses/<course_id>/enroll/` | S’inscrire (409 si déjà inscrit) |
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `POST` | `/api/cosmetics/purchase/` | Corps : `{ "cosmetic_id": <id> }` — vérifie solde, débite `wallet_balance`, crée `UserCosmeticPurchase` (409 si déjà acheté, 402 si solde insuffisant) |
+
+---
+
+## 6. Cours & parcours (élève)
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/courses/` | Liste ; `?theme=<id>` optionnel |
+| `GET` | `/api/courses/<course_id>/` | Détail (contenu + ids quiz / badge / thème) |
+| `GET` | `/api/me/courses/` | Cours suivis |
+| `POST` | `/api/courses/<course_id>/enroll/` | S'inscrire (409 si déjà inscrit) |
 | `DELETE` | `/api/courses/<course_id>/enroll/` | Se désinscrire |
 
-*Création / édition des cours : **admin Django**.*
+---
+
+## 7. Quiz côté élève
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/quizzes/<quiz_id>/play/` | Questions + réponses sans `is_correct` |
+| `POST` | `/api/quizzes/<quiz_id>/submit/` | Corps : `{ "answers": { "<question_id>": <answer_id>, … } }` — calcule score ; si réussite : crédite pièces + XP, met à jour rang, attribue badge du cours si inscrit |
 
 ---
 
-## 7. Quiz côté élève (`Quiz`, `Question`, `Answer`)
+## 8. Espace formateur (`IsFormateur`)
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `GET` | `/api/quizzes/<quiz_id>/play/` | Quiz pour jouer : questions + réponses (**sans** champ `is_correct` dans le JSON pour limiter la triche) |
-| `POST` | `/api/quizzes/<quiz_id>/submit/` | Corps : `{ "answers": { "<question_id>": <answer_id>, ... } }` — calcule le score ; si réussite (`≥ min_score_to_pass`) : ajoute pièces (`coins_on_success`), XP des questions (`xp_value`), crée `UserBadge` pour le badge du cours si le quiz correspond au cours validé et que l’utilisateur est inscrit |
+> Toutes ces routes exigent le rôle `formateur`. L'ownership est vérifié : un formateur ne peut accéder qu'aux ressources qu'il a créées. Le rôle `formateur` ne peut pas être choisi à l'inscription — il est attribué par un administrateur.
 
-*Création / édition des quiz et questions : **admin Django**.*
+### Cours
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/formateur/courses/` | Liste ses propres cours |
+| `POST` | `/api/formateur/courses/` | Créer un cours |
+| `GET` | `/api/formateur/courses/<course_id>/` | Détail |
+| `PATCH` | `/api/formateur/courses/<course_id>/` | Modifier (partiel) |
+| `DELETE` | `/api/formateur/courses/<course_id>/` | Supprimer |
+| `GET` | `/api/formateur/courses/<course_id>/stats/` | Stats apprenants : `enrolled_count`, liste avec `email`, `total_xp`, `rank`, `badge_earned` |
+
+### Quiz
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/formateur/quizzes/` | Liste ses propres quiz |
+| `POST` | `/api/formateur/quizzes/` | Créer un quiz (`coins_on_success`, `min_score_to_pass`) |
+| `GET` | `/api/formateur/quizzes/<quiz_id>/` | Détail |
+| `PATCH` | `/api/formateur/quizzes/<quiz_id>/` | Modifier |
+| `DELETE` | `/api/formateur/quizzes/<quiz_id>/` | Supprimer |
+
+### Questions
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/formateur/quizzes/<quiz_id>/questions/` | Liste les questions d'un quiz |
+| `POST` | `/api/formateur/quizzes/<quiz_id>/questions/` | Ajouter une question (`question_content`, `xp_value`) |
+| `PATCH` | `/api/formateur/questions/<question_id>/` | Modifier |
+| `DELETE` | `/api/formateur/questions/<question_id>/` | Supprimer |
+
+### Réponses
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/formateur/questions/<question_id>/answers/` | Liste les réponses d'une question |
+| `POST` | `/api/formateur/questions/<question_id>/answers/` | Ajouter une réponse (`label_answer`, `is_correct`) |
+| `PATCH` | `/api/formateur/answers/<answer_id>/` | Modifier |
+| `DELETE` | `/api/formateur/answers/<answer_id>/` | Supprimer |
 
 ---
 
-## 8. Santé (facultatif)
+## 9. Administration (`is_staff`)
 
-| Méthode | Chemin | Rôle |
-|---------|--------|------|
-| `GET` | `/api/health/` | `{"ok": true}` pour surveillance |
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| `GET` | `/api/admin/users/` | Liste paginée des comptes (25/page) |
+| `GET` | `/api/admin/users/<user_id>/` | Détail d'un compte |
+| `PATCH` | `/api/admin/users/<user_id>/` | Modifier un compte (ex. changer le rôle) |
 
 ---
 
-## Récap : environ **20 routes** au lieu d’une grosse surface CRUD
+## 10. Santé
 
-| Modèle | Couverture MVP |
-|--------|----------------|
-| `User` | `register`, `login`, `logout`, `me` |
+| Méthode | Chemin | Auth | Description |
+|---------|--------|------|-------------|
+| `GET` | `/api/health/` | Non | `{"ok": true}` |
+
+---
+
+## Récap couverture
+
+| Modèle | Routes |
+|--------|--------|
+| `User` | register, login, logout, me, admin |
 | `Role` | `GET /roles/` |
 | `Rank` | `GET /ranks/` |
-| `Profile` | `me/profile` |
+| `Profile` | `me/profile` GET + PATCH |
 | `Badge` | `GET /badges/` |
 | `UserBadge` | `me/badges` (+ créé au submit quiz) |
-| `Cosmetic` | `GET /cosmetics/` + `purchase` |
-| `UserCosmeticPurchase` | créé via `purchase` |
+| `Cosmetic` | `GET /cosmetics/` + purchase |
+| `UserCosmeticPurchase` | `me/purchases` + créé via purchase |
 | `Theme` | `GET /themes/` |
-| `Course` | `GET` liste/détail, enroll + `me/courses` |
-| `CourseEnrollment` | via enroll / désinscription |
-| `Quiz` | `play` + `submit` |
-| `Question` / `Answer` | imbriqués dans `play` / utilisés dans `submit` |
+| `Course` | liste/détail/enroll/me/courses + CRUD formateur + stats |
+| `CourseEnrollment` | enroll / désinscription |
+| `Quiz` | play + submit + CRUD formateur |
+| `Question` | imbriquée dans play + CRUD formateur |
+| `Answer` | imbriquée dans play/submit + CRUD formateur |
+| `ActivityLog` | écrit automatiquement par les vues (non exposé en API) |
 
-**Hors API pour aller vite** : création modification `Role`, `Rank`, `Theme`, `Course`, `Quiz`, `Question`, `Answer`, `Badge`, `Cosmetic` dans **`/admin/`**.
-
-Quand tout tourne, tu pourras réintroduire des ViewSets CRUD staff et OpenAPI détaillé sans changer les URLs élève ci-dessus.
