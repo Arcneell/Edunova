@@ -52,6 +52,7 @@ export default function AdminCourses() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial depuis l'API
     void loadCourses()
   }, [])
 

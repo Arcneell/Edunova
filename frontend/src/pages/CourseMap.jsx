@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import CourseMapBoardSvg from '../components/CourseMapBoardSvg.jsx'
 import { getQuizPlay, getThemeMap, getThemes, submitQuiz } from '../api/user/learningMap.js'
 
 const COURSE_FIXED_POINTS = [
@@ -96,6 +97,13 @@ export default function CourseMap() {
 
   const checkpoints = useMemo(() => mapData?.checkpoints ?? [], [mapData])
   const mapNodes = useMemo(() => buildMapNodes(checkpoints), [checkpoints])
+  const routePathPoints = useMemo(() => {
+    if (checkpoints.length < 2) return []
+    return checkpoints.map((_, i) => {
+      const pos = getNodePosition(i, checkpoints.length, COURSE_FIXED_POINTS)
+      return { x: parseFloat(pos.left), y: parseFloat(pos.top) }
+    })
+  }, [checkpoints])
 
   async function handleOpenQuiz(checkpoint, nodeKind = 'quiz') {
     setResultMessage('')
@@ -178,6 +186,7 @@ export default function CourseMap() {
           <label>
             Thématique
             <select
+              className="select-field"
               value={selectedThemeId}
               onChange={(e) => {
                 setSelectedThemeId(e.target.value)
@@ -225,7 +234,8 @@ export default function CourseMap() {
             </button>
           </div>
           <div className="course-map course-map--fullscreen">
-            <div className="course-map__board" role="img" aria-label="Carte statique des cours">
+            <div className="course-map__board" role="region" aria-label="Carte du parcours de cours">
+              <CourseMapBoardSvg pathPoints={routePathPoints} />
               {mapNodes.map((node) => {
                 const position = node.position
                 const checkpoint = node.checkpoint

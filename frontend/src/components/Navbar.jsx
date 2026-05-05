@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 
@@ -49,6 +49,13 @@ export default function Navbar() {
   function navCtaClass({ isActive }) {
     return `navbar__link navbar__cta ${isActive ? 'navbar__cta--active' : ''}`
   }
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileOpen])
 
   return (
     <header className="navbar">
