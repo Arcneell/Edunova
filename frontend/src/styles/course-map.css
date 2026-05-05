@@ -387,15 +387,28 @@
   inset: 0;
   z-index: 2600;
   background: radial-gradient(circle at 50% 25%, rgba(26, 57, 138, 0.42) 0%, rgba(7, 10, 22, 0.78) 70%);
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+    max(22px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  min-height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .course-map-modal {
+  margin-top: auto;
+  margin-bottom: auto;
   width: min(820px, 100%);
-  max-height: 92vh;
-  overflow: auto;
+  max-width: 100%;
+  max-height: min(88dvh, calc(100dvh - 28px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1.15rem 1.3rem 1.4rem;
   border: 1px solid rgb(166, 169, 245);
   background: linear-gradient(
     180deg,
@@ -403,6 +416,10 @@
     rgb(216, 218, 222) 100%
   );
   box-shadow: 0 24px 64px rgba(4, 8, 22, 0.48);
+}
+
+.course-map-modal--narrow {
+  width: min(480px, 100%);
 }
 
 .course-map-modal__head {

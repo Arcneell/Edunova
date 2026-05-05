@@ -18,6 +18,6 @@ urlpatterns = [
     path('me/courses/', MyCourseListView.as_view(), name='api_me_courses'),
     path('me/badges/', MyBadgeListView.as_view(), name='api_me_badges'),
     path('me/purchases/', MyPurchaseListView.as_view(), name='api_me_purchases'),
-    path('admin/users/', views.AdminUserListView.as_view(), name='api_admin_users_list'),
+    path('admin/users/', views.AdminUserListCreateView.as_view(), name='api_admin_users_list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='api_admin_users_detail'),
 ]
