@@ -5,14 +5,15 @@ const proxyTarget =
   process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   server: {
-    proxy: {
-      '/api': {
-        target: proxyTarget,
-        changeOrigin: true,
-      },
-    },
+    hmr:
+      mode === 'production'
+        ? false
+        : {
+            host: '10.10.40.220',
+            port: 80,
+          },
   },
-})
+}))
