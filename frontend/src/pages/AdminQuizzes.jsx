@@ -207,6 +207,15 @@ export default function AdminQuizzes() {
     void reloadQuestions()
   }, [reloadQuestions])
 
+  const safeQuestionIndex = useMemo(() => {
+    const n = questions.length
+    if (n === 0) return 0
+    const raw = Number.isFinite(questionIndex) ? Math.trunc(Number(questionIndex)) : 0
+    return Math.min(Math.max(0, raw), n - 1)
+  }, [questions, questionIndex])
+
+  const activeQuestion = questions.length > 0 ? questions[safeQuestionIndex] : null
+
   async function handleCreateQuiz(event) {
     event.preventDefault()
     const coins = Number(newQuizForm.coins_on_success)
@@ -348,8 +357,6 @@ export default function AdminQuizzes() {
     }
   }
 
-  const activeQuestion = questions.length > 0 ? questions[questionIndex] : null
-
   return (
     <div className="page">
       <header className="page-header page-header--split">
@@ -461,47 +468,46 @@ export default function AdminQuizzes() {
           ) : null}
 
           {selectedQuizId && questions.length > 0 ? (
-            <div className="quiz-q-pager" role="navigation" aria-label="Pagination des questions">
-              <button
-                type="button"
-                className="dash-pager__btn"
-                disabled={questionIndex <= 0}
-                onClick={() => setQuestionIndex((i) => Math.max(0, i - 1))}
-              >
-                Question précédente
-              </button>
-              <span className="dash-pager__info quiz-q-pager__status">
-                Question <strong>{questionIndex + 1}</strong> sur <strong>{questions.length}</strong>
-                <span className="muted quiz-q-pager__id">
-                  {' '}
-                  (id&nbsp;#{activeQuestion?.question_id})
-                </span>
-              </span>
-              <label className="quiz-q-jump">
-                <span className="muted">Aller à</span>
-                <select
-                  value={questionIndex}
-                  onChange={(e) => setQuestionIndex(Number(e.target.value))}
-                  aria-label="Choisir la question à afficher"
+            <section className="card quiz-q-controls" aria-label="Navigation entre les questions">
+              <p className="quiz-q-controls__meta muted">
+                Question <strong>{safeQuestionIndex + 1}</strong> sur <strong>{questions.length}</strong>
+                {' · '}
+                <span className="muted">id #{activeQuestion?.question_id}</span>
+              </p>
+              <div className="quiz-q-controls__nav">
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={safeQuestionIndex <= 0}
+                  onClick={() => setQuestionIndex(safeQuestionIndex - 1)}
                 >
-                  {questions.map((qu, idx) => (
-                    <option key={qu.question_id} value={idx}>
-                      Question {idx + 1} — #{qu.question_id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                className="dash-pager__btn dash-pager__btn--primary"
-                disabled={questionIndex >= questions.length - 1}
-                onClick={() =>
-                  setQuestionIndex((i) => Math.min(questions.length - 1, i + 1))
-                }
-              >
-                Question suivante
-              </button>
-            </div>
+                  ← Précédente
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  disabled={safeQuestionIndex >= questions.length - 1}
+                  onClick={() => setQuestionIndex(safeQuestionIndex + 1)}
+                >
+                  Suivante →
+                </button>
+              </div>
+              <div className="stack-form quiz-q-controls__picker">
+                <label>
+                  Aller à la question
+                  <select
+                    value={safeQuestionIndex}
+                    onChange={(e) => setQuestionIndex(Number(e.target.value))}
+                  >
+                    {questions.map((qu, idx) => (
+                      <option key={qu.question_id} value={idx}>
+                        {idx + 1}. {qu.question_content.length > 72 ? `${qu.question_content.slice(0, 72)}…` : qu.question_content || `Question ${idx + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
           ) : null}
 
           <div className="quiz-question-list">
