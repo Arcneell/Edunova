@@ -779,8 +779,10 @@
 .quiz-result__score-value {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6px;
   font-family: var(--mono);
   color: var(--text-h);
 }
