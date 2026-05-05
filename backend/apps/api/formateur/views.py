@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.api.users.permissions import IsFormateur
-from apps.edunova.models import Answer, Course, CourseEnrollment, Question, Quiz, UserBadge
+from apps.edunova.models import ActivityLog, Answer, Course, CourseEnrollment, Question, Quiz, UserBadge
 from .serializers import (
     FormateurAnswerSerializer,
     FormateurCourseSerializer,
@@ -35,7 +35,12 @@ class FormateurCourseListCreateView(APIView):
     def post(self, request):
         serializer = FormateurCourseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(created_by=request.user)
+        course = serializer.save(created_by=request.user)
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.COURSE_CREATE,
+            metadata={'course_id': course.course_id, 'title': course.course_title},
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -55,10 +60,20 @@ class FormateurCourseDetailView(APIView):
         serializer = FormateurCourseSerializer(course, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.COURSE_UPDATE,
+            metadata={'course_id': course_id},
+        )
         return Response(serializer.data)
 
     def delete(self, request, course_id):
         self._get_course(course_id).delete()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.COURSE_DELETE,
+            metadata={'course_id': course_id},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -115,7 +130,12 @@ class FormateurQuizListCreateView(APIView):
     def post(self, request):
         serializer = FormateurQuizSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(created_by=request.user)
+        quiz = serializer.save(created_by=request.user)
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUIZ_CREATE,
+            metadata={'quiz_id': quiz.quiz_id, 'title': quiz.quiz_title},
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -135,10 +155,20 @@ class FormateurQuizDetailView(APIView):
         serializer = FormateurQuizSerializer(quiz, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUIZ_UPDATE,
+            metadata={'quiz_id': quiz_id},
+        )
         return Response(serializer.data)
 
     def delete(self, request, quiz_id):
         self._get_own_quiz(request, quiz_id).delete()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUIZ_DELETE,
+            metadata={'quiz_id': quiz_id},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -160,7 +190,12 @@ class FormateurQuestionListCreateView(APIView):
         quiz = get_object_or_404(Quiz, pk=quiz_id, created_by=request.user)
         serializer = FormateurQuestionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(quiz=quiz)
+        question = serializer.save(quiz=quiz)
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUESTION_CREATE,
+            metadata={'question_id': question.question_id, 'quiz_id': quiz_id},
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -177,10 +212,20 @@ class FormateurQuestionDetailView(APIView):
         serializer = FormateurQuestionSerializer(question, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUESTION_UPDATE,
+            metadata={'question_id': question_id},
+        )
         return Response(serializer.data)
 
     def delete(self, request, question_id):
         self._get_own_question(request, question_id).delete()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUESTION_DELETE,
+            metadata={'question_id': question_id},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -202,7 +247,12 @@ class FormateurAnswerListCreateView(APIView):
         question = get_object_or_404(Question, pk=question_id, quiz__created_by=request.user)
         serializer = FormateurAnswerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(question=question)
+        answer = serializer.save(question=question)
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.ANSWER_CREATE,
+            metadata={'answer_id': answer.answer_id, 'question_id': question_id},
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -219,8 +269,18 @@ class FormateurAnswerDetailView(APIView):
         serializer = FormateurAnswerSerializer(answer, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.ANSWER_UPDATE,
+            metadata={'answer_id': answer_id},
+        )
         return Response(serializer.data)
 
     def delete(self, request, answer_id):
         self._get_own_answer(request, answer_id).delete()
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.ANSWER_DELETE,
+            metadata={'answer_id': answer_id},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)

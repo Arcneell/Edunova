@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.edunova.models import Cosmetic, UserCosmeticPurchase
+from apps.edunova.models import ActivityLog, Cosmetic, UserCosmeticPurchase
 from .serializers import CosmeticSerializer, UserCosmeticPurchaseSerializer
 
 
@@ -58,6 +58,15 @@ class CosmeticPurchaseView(APIView):
         profile.save()
 
         purchase = UserCosmeticPurchase.objects.create(user=request.user, cosmetic=cosmetic)
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.COSMETIC_PURCHASE,
+            metadata={
+                'cosmetic_id': cosmetic.cosmetic_id,
+                'cosmetic_name': cosmetic.cosmetic_name,
+                'cost': cosmetic.cosmetic_cost,
+            },
+        )
         return Response(
             UserCosmeticPurchaseSerializer(purchase).data,
             status=status.HTTP_201_CREATED,

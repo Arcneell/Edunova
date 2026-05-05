@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.api.users.permissions import is_learner_role
-from apps.edunova.models import Course, CourseEnrollment
+from apps.edunova.models import ActivityLog, Course, CourseEnrollment
 from .serializers import CourseDetailSerializer, CourseListSerializer
 
 
@@ -88,6 +88,11 @@ class CourseEnrollView(APIView):
                 {'detail': 'Vous êtes déjà inscrit à ce cours.'},
                 status=status.HTTP_409_CONFLICT,
             )
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.COURSE_ENROLL,
+            metadata={'course_id': course_id},
+        )
         return Response(
             {'detail': 'Inscription confirmée.'},
             status=status.HTTP_201_CREATED,
@@ -107,4 +112,9 @@ class CourseEnrollView(APIView):
                 {'detail': "Vous n'êtes pas inscrit à ce cours."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.COURSE_UNENROLL,
+            metadata={'course_id': course_id},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
