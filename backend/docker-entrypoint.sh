@@ -1,84 +1,44 @@
 #!/bin/bash
+# Au démarrage : port Postgres joignable puis migrate (pas pendant le docker build).
 set -euo pipefail
-
-if [[ ! -f manage.py ]]; then
-  echo "[backend] Création Django à la racine de backend/ (sans sous-dossier projet)..."
-  TMP=$(mktemp -d)
-  (
-    cd "$TMP"
-    django-admin startproject core .
-    mv manage.py /app/
-    mv core/* /app/
-    rm -rf core
-  )
-  rm -rf "$TMP"
-
-  cd /app
-  sed -i 's/core\.settings/settings/g' manage.py wsgi.py asgi.py
-
-  python3 << 'PY'
-from pathlib import Path
-import re
-
-p = Path("settings.py")
-t = p.read_text(encoding="utf-8")
-t = re.sub(
-    r"ROOT_URLCONF\s*=\s*['\"]core\.urls['\"]",
-    "ROOT_URLCONF = 'urls'",
-    t,
-)
-t = re.sub(
-    r"WSGI_APPLICATION\s*=\s*['\"]core\.wsgi\.application['\"]",
-    "WSGI_APPLICATION = 'wsgi.application'",
-    t,
-)
-t = re.sub(
-    r"ASGI_APPLICATION\s*=\s*['\"]core\.asgi\.application['\"]",
-    "ASGI_APPLICATION = 'asgi.application'",
-    t,
-)
-t = t.replace(
-    "Path(__file__).resolve().parent.parent",
-    "Path(__file__).resolve().parent",
-)
-p.write_text(t, encoding="utf-8")
-PY
-
-  cat >> settings.py << 'SETTINGS_APPEND'
-
-# --- PostgreSQL (docker-entrypoint) ---
-import os
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "edunova"),
-        "USER": os.environ.get("POSTGRES_USER", "edunova"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "edunova"),
-        "HOST": os.environ.get("POSTGRES_HOST", "db"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-    }
-}
-
-ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", "backend"]
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://frontend:5173",
-]
-SETTINGS_APPEND
-
-  echo "[backend] Django prêt à la racine."
-fi
 
 cd /app
 
-echo "[backend] Attente de PostgreSQL (${POSTGRES_HOST:-db})..."
-until pg_isready -h "${POSTGRES_HOST:-db}" -U "${POSTGRES_USER:-edunova}" -d "${POSTGRES_DB:-edunova}" >/dev/null 2>&1; do
-  sleep 1
-done
+echo "[backend] Attente de PostgreSQL (${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432})…"
+python - <<'PY'
+import os, socket, time
 
-echo "[backend] Migrations..."
-python manage.py migrate --noinput
+host = os.environ.get("POSTGRES_HOST", "db")
+port = int(os.environ.get("POSTGRES_PORT", "5432"))
+timeout_s = 2
+max_wait_s = 120
+deadline = time.monotonic() + max_wait_s
+last_msg = 0.0
+
+while time.monotonic() < deadline:
+    try:
+        with socket.create_connection((host, port), timeout=timeout_s):
+            break
+    except OSError:
+        now = time.monotonic()
+        if now - last_msg > 10:
+            print(f"[backend] Postgres pas encore joignable ({host}:{port}), nouvel essai…", flush=True)
+            last_msg = now
+        time.sleep(1)
+else:
+    raise SystemExit(f"[backend] Timeout après {max_wait_s}s : PostgreSQL injoignable sur {host}:{port}")
+PY
+
+echo "[backend] Migrations…"
+attempt=0
+max_attempts=12
+until python manage.py migrate --noinput; do
+  attempt=$((attempt + 1))
+  if [ "${attempt}" -ge "${max_attempts}" ]; then
+    echo "[backend] migrate a échoué après ${max_attempts} essais." >&2
+    exit 1
+  fi
+  sleep 2
+done
 
 exec "$@"
