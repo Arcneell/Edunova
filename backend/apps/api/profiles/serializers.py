@@ -29,4 +29,4 @@ class ProfileReadSerializer(serializers.ModelSerializer):
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ('current_avatar_url', 'current_banner_url')
+        fields = ('current_banner_url',)
