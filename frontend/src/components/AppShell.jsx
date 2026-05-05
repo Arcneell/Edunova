@@ -14,7 +14,7 @@ export default function AppShell() {
         <div className="app-footer__inner">
           <div className="app-footer__lead">
             <div className="app-footer__brand-line">
-              <span className="navbar__logo" aria-hidden="true" />
+              <img className="navbar__logo" src="/edunova-mark.svg" alt="" decoding="async" />
               <span className="app-footer__brand">Edunova</span>
             </div>
             <p className="app-footer__tagline">
@@ -42,9 +42,6 @@ export default function AppShell() {
           <nav className="app-footer__cols" aria-label="Espace équipe">
             <p className="app-footer__col-title">Fonctionnels</p>
             <ul className="app-footer__list">
-              <li>
-                <Link to="/admin">Dashboard</Link>
-              </li>
               <li>
                 <Link to="/admin/cours">Gestion des cours</Link>
               </li>

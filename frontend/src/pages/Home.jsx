@@ -81,7 +81,7 @@ export default function Home() {
                   </Link>
                   {canTeam ? (
                     <Link to="/admin" className="btn btn--secondary">
-                      Dashboard équipe
+                      Espace équipe
                     </Link>
                   ) : null}
                 </>
