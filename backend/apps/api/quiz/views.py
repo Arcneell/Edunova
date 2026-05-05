@@ -1,4 +1,6 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -75,41 +77,79 @@ class QuizSubmitView(APIView):
         rank_up = False
         current_rank = None
 
+        course = Course.objects.filter(validating_quiz=quiz).select_related('theme', 'delivered_badge').first()
+
         if passed:
-            coins_earned = quiz.coins_on_success
-            profile = request.user.profile
-            old_rank_id = profile.rank_id
-            profile.wallet_balance += coins_earned
-            profile.total_xp += xp_earned
+            with transaction.atomic():
+                coins_earned = quiz.coins_on_success
+                profile = request.user.profile
+                old_rank_id = profile.rank_id
+                profile.wallet_balance += coins_earned
+                profile.total_xp += xp_earned
 
-            new_rank = (
-                Rank.objects
-                .filter(xp_threshold__lte=profile.total_xp)
-                .order_by('-xp_threshold')
-                .first()
-            )
-            if new_rank:
-                profile.rank = new_rank
-                rank_up = (new_rank.rank_id != old_rank_id)
-                current_rank = new_rank
-            profile.save()
+                new_rank = (
+                    Rank.objects
+                    .filter(xp_threshold__lte=profile.total_xp)
+                    .order_by('-xp_threshold')
+                    .first()
+                )
+                if new_rank:
+                    profile.rank = new_rank
+                    rank_up = (new_rank.rank_id != old_rank_id)
+                    current_rank = new_rank
+                profile.save()
 
-            # Attribution du badge si le quiz valide un cours et que l'utilisateur est inscrit
-            course = (
-                Course.objects
-                .filter(validating_quiz=quiz)
-                .select_related('delivered_badge')
-                .first()
-            )
-            if course:
-                enrolled = CourseEnrollment.objects.filter(
-                    user=request.user, course=course
-                ).exists()
-                if enrolled and course.delivered_badge:
-                    UserBadge.objects.get_or_create(
+                if course:
+                    progress, _ = UserCourseProgress.objects.get_or_create(
                         user=request.user,
-                        badge=course.delivered_badge,
+                        course=course,
+                        defaults={'is_unlocked': True},
                     )
+                    progress.best_score = max(progress.best_score, score)
+                    if not progress.is_unlocked:
+                        progress.is_unlocked = True
+                        progress.unlocked_at = timezone.now()
+                    progress.is_completed = True
+                    if progress.completed_at is None:
+                        progress.completed_at = timezone.now()
+                    progress.save()
+
+                    themed_courses = Course.objects.filter(theme=course.theme)
+                    if is_learner_role(role_name):
+                        themed_courses = themed_courses.filter(created_by_id=request.user.formateur_id)
+                    ordered_ids = list(
+                        themed_courses.order_by('map_order', 'course_id').values_list('course_id', flat=True)
+                    )
+                    try:
+                        idx = ordered_ids.index(course.course_id)
+                    except ValueError:
+                        idx = -1
+                    if 0 <= idx < len(ordered_ids) - 1:
+                        next_id = ordered_ids[idx + 1]
+                        next_prog, _ = UserCourseProgress.objects.get_or_create(
+                            user=request.user,
+                            course_id=next_id,
+                            defaults={'is_unlocked': False},
+                        )
+                        if not next_prog.is_unlocked:
+                            next_prog.is_unlocked = True
+                            next_prog.unlocked_at = timezone.now()
+                            next_prog.save(update_fields=['is_unlocked', 'unlocked_at', 'updated_at'])
+
+                    enrolled = CourseEnrollment.objects.filter(user=request.user, course=course).exists()
+                    if enrolled and course.delivered_badge:
+                        UserBadge.objects.get_or_create(
+                            user=request.user,
+                            badge=course.delivered_badge,
+                        )
+        elif course:
+            progress, _ = UserCourseProgress.objects.get_or_create(
+                user=request.user,
+                course=course,
+                defaults={'is_unlocked': True},
+            )
+            progress.best_score = max(progress.best_score, score)
+            progress.save(update_fields=['best_score', 'updated_at'])
 
         ActivityLog.objects.create(
             user=request.user,
