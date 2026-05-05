@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import CourseMapBoardSvg from '../components/CourseMapBoardSvg.jsx'
 import { getQuizPlay, getThemeMap, getThemes, submitQuiz } from '../api/user/learningMap.js'
@@ -64,11 +65,12 @@ export default function CourseMap() {
     setError('')
     setResultMessage('')
     try {
-      if (!themeId) {
+      const id = Number(themeId)
+      if (!themeId || Number.isNaN(id) || id <= 0) {
         setMapData({ theme_title: 'Aucune thématique', checkpoints: [] })
         return
       }
-      const data = await getThemeMap(themeId)
+      const data = await getThemeMap(id)
       setMapData(data)
       setMapValidated(true)
     } catch (e) {
@@ -77,6 +79,15 @@ export default function CourseMap() {
       setLoadingMap(false)
     }
   }
+
+  useEffect(() => {
+    if (!mapValidated) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [mapValidated])
 
   useEffect(() => {
     async function loadThemes() {
@@ -96,6 +107,10 @@ export default function CourseMap() {
   }, [])
 
   const checkpoints = useMemo(() => mapData?.checkpoints ?? [], [mapData])
+  const activeQuestCourseId = useMemo(() => {
+    const next = checkpoints.find((c) => c.status === 'unlocked')
+    return next?.course_id ?? null
+  }, [checkpoints])
   const mapNodes = useMemo(() => buildMapNodes(checkpoints), [checkpoints])
   const routePathPoints = useMemo(() => {
     if (checkpoints.length < 2) return []
@@ -226,59 +241,117 @@ export default function CourseMap() {
       ) : null}
 
       {!loadingThemes && mapValidated ? (
-        <section className="course-map-fullscreen">
-          <div className="course-map-fullscreen__topbar">
-            <strong>{mapData?.theme_title || 'Thématique'}</strong>
-            <button type="button" className="btn btn--secondary" onClick={handleCloseMap}>
-              Quitter la map
-            </button>
-          </div>
-          <div className="course-map course-map--fullscreen">
-            <div className="course-map__board" role="region" aria-label="Carte du parcours de cours">
-              <CourseMapBoardSvg pathPoints={routePathPoints} />
-              {mapNodes.map((node) => {
-                const position = node.position
-                const checkpoint = node.checkpoint
-                const typeLabel = node.kind === 'quiz' ? 'Quiz' : 'Cours'
-                return (
-                  <button
-                    key={node.id}
-                    type="button"
-                    className={`course-map__node course-map__node--${checkpoint.status} course-map__node--${node.kind}`}
-                    style={position}
-                    onClick={() => {
-                      if (checkpoint.status === 'locked') return
-                      if (node.kind === 'quiz') {
-                        void handleOpenQuiz(checkpoint, 'quiz')
-                      } else {
-                        setSelectedNode(node)
-                        setActiveQuiz(null)
-                      }
-                    }}
-                    disabled={checkpoint.status === 'locked'}
-                    title={`${typeLabel} · ${checkpoint.title}`}
-                  >
-                    <span className="course-map__node-order">
-                      {node.kind === 'quiz' ? 'Q' : checkpoint.map_order}
-                    </span>
+        <section className="course-map-fullscreen" aria-label="Parcours plein écran">
+              <header className="course-map-rpg__header">
+                <div className="course-map-rpg__title-block">
+                  <p className="course-map-rpg__eyebrow">Quête de formation</p>
+                  <strong>{mapData?.theme_title || 'Thématique'}</strong>
+                </div>
+                <div className="hero-actions" style={{ margin: 0 }}>
+                  <Link to="/compte" className="btn btn--secondary">
+                    Mon compte
+                  </Link>
+                  <button type="button" className="btn btn--primary" onClick={handleCloseMap}>
+                    Quitter la map
                   </button>
-                )
-              })}
-            </div>
-            {mapNodes.length === 0 ? (
-              <p className="hint">Aucun cours disponible sur cette thématique.</p>
-            ) : null}
-          </div>
-        </section>
+                </div>
+              </header>
+
+              <div className="course-map course-map--fullscreen">
+                <div className="course-map-rpg__body">
+                  <aside className="course-map-rpg__legend" aria-label="Progression des étapes">
+                    <h2 className="course-map-rpg__legend-head">Journal de quête</h2>
+                    {checkpoints.length === 0 ? (
+                      <p className="muted" style={{ margin: 0 }}>
+                        Aucun cours sur cette thématique.
+                      </p>
+                    ) : (
+                      <ol className="course-map-rpg__steps">
+                        {checkpoints.map((cp) => {
+                          const isCurrent = cp.status === 'unlocked' && cp.course_id === activeQuestCourseId
+                          const stepClass = [
+                            'course-map-rpg__step',
+                            cp.status === 'completed' && 'course-map-rpg__step--completed',
+                            isCurrent && 'course-map-rpg__step--current',
+                            cp.status === 'locked' && 'course-map-rpg__step--locked',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')
+                          const badge =
+                            cp.status === 'completed'
+                              ? { label: 'Terminé', cls: 'course-map-rpg__badge--ok' }
+                              : cp.status === 'unlocked'
+                                ? { label: 'En cours', cls: 'course-map-rpg__badge--wip' }
+                                : { label: 'Verrouillé', cls: 'course-map-rpg__badge--locked' }
+                          return (
+                            <li key={cp.course_id} className={stepClass}>
+                              <span className="course-map-rpg__step-num">{cp.map_order}</span>
+                              <div className="course-map-rpg__step-meta">
+                                <strong title={cp.title}>{cp.title}</strong>
+                                <span>
+                                  {cp.status === 'completed' && cp.best_score != null
+                                    ? `Meilleur score : ${cp.best_score}%`
+                                    : cp.quiz?.quiz_id
+                                      ? 'Valide le quiz pour avancer'
+                                      : 'Pas de quiz de validation'}
+                                </span>
+                              </div>
+                              <span className={`course-map-rpg__badge ${badge.cls}`}>{badge.label}</span>
+                            </li>
+                          )
+                        })}
+                      </ol>
+                    )}
+                  </aside>
+
+                  <div className="course-map-rpg__arena">
+                    <div className="course-map__board" role="region" aria-label="Carte du parcours de cours">
+                      <CourseMapBoardSvg pathPoints={routePathPoints} />
+                      {mapNodes.map((node) => {
+                        const position = node.position
+                        const checkpoint = node.checkpoint
+                        return (
+                          <button
+                            key={node.id}
+                            type="button"
+                            className={`course-map__node course-map__node--${checkpoint.status}`}
+                            style={position}
+                            onClick={() => {
+                              if (checkpoint.status === 'locked') return
+                              setSelectedNode(node)
+                              setActiveQuiz(null)
+                            }}
+                            disabled={checkpoint.status === 'locked'}
+                            title={`Cours · ${checkpoint.title}`}
+                          >
+                            <span className="course-map__node-order">{checkpoint.map_order}</span>
+                          </button>
+                        )
+                      })}
+                      {mapNodes.length === 0 ? (
+                        <div className="course-map__hint-empty" role="status">
+                          Aucun point de passage sur cette carte. Choisis une autre thématique ou contacte un
+                          formateur.
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
       ) : null}
 
-      {selectedNode ? (
-        <div className="course-map-modal__overlay" onClick={() => {
-          setSelectedNode(null)
-          setActiveQuiz(null)
-          setAnswers({})
-        }}>
-          <section className="course-map-modal card" onClick={(event) => event.stopPropagation()}>
+      {selectedNode
+        ? createPortal(
+            <div
+              className="course-map-modal__overlay"
+              onClick={() => {
+                setSelectedNode(null)
+                setActiveQuiz(null)
+                setAnswers({})
+              }}
+            >
+              <section className="course-map-modal card" onClick={(event) => event.stopPropagation()}>
             <div className="course-map-modal__head">
               <h2 className="section-title">
                 {selectedNode.kind === 'quiz' ? 'Quiz' : 'Cours'}: {selectedNode.checkpoint.title}
@@ -354,15 +427,19 @@ export default function CourseMap() {
                 </div>
               </form>
             ) : null}
-          </section>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {!mapValidated ? (
+        <div className="hero-actions">
+          <Link to="/compte" className="btn btn--secondary">
+            Retour au compte
+          </Link>
         </div>
       ) : null}
-
-      <div className="hero-actions">
-        <Link to="/compte" className="btn btn--secondary">
-          Retour au compte
-        </Link>
-      </div>
     </div>
   )
 }
