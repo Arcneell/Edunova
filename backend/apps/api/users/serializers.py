@@ -4,7 +4,8 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from apps.edunova.models import Profile, Rank, Role, User
+from apps.api.profiles.serializers import ProfileReadSerializer
+from apps.edunova.models import Role, User
 
 
 class RoleBriefSerializer(serializers.ModelSerializer):
@@ -32,33 +33,6 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         if User.objects.filter(email__iexact=value).exclude(pk=user.pk).exists():
             raise serializers.ValidationError('Cette adresse e-mail est déjà utilisée.')
         return value.lower()
-
-
-class RankBriefSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rank
-        fields = ('rank_id', 'label')
-
-
-class ProfileReadSerializer(serializers.ModelSerializer):
-    rank = RankBriefSerializer(read_only=True)
-
-    class Meta:
-        model = Profile
-        fields = (
-            'total_xp',
-            'wallet_balance',
-            'current_avatar_url',
-            'current_banner_url',
-            'current_streak',
-            'rank',
-        )
-
-
-class ProfileUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ('current_avatar_url', 'current_banner_url')
 
 
 class RegisterSerializer(serializers.Serializer):
