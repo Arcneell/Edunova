@@ -70,9 +70,14 @@ class ThemeMapView(APIView):
                 )
 
         checkpoints = []
-        for course in courses:
+        for index, course in enumerate(courses):
             progress = progress_by_course_id[course['course_id']]
-            should_be_unlocked = True
+            if index == 0:
+                should_be_unlocked = True
+            else:
+                prev_course = courses[index - 1]
+                prev_prog = progress_by_course_id[prev_course['course_id']]
+                should_be_unlocked = bool(prev_prog.is_completed)
             if progress.is_unlocked != should_be_unlocked:
                 progress.is_unlocked = should_be_unlocked
                 progress.save(update_fields=['is_unlocked', 'updated_at'])

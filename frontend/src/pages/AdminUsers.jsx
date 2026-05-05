@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { NavLink } from 'react-router-dom'
 import { listAdminUsers } from '../api/user/adminUsers.js'
 import {
   AdminUsersTable,
@@ -31,10 +30,6 @@ function pageFromPath(path) {
   } catch {
     return null
   }
-}
-
-function adminLinkClass({ isActive }) {
-  return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
 }
 
 export default function AdminUsers() {
@@ -79,21 +74,6 @@ export default function AdminUsers() {
 
   return (
     <DashLayout>
-      <nav className="admin-nav" aria-label="Navigation admin">
-        <NavLink to="/admin" end className={adminLinkClass}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/admin/users" className={adminLinkClass}>
-          Utilisateurs
-        </NavLink>
-        <NavLink to="/admin/cours" className={adminLinkClass}>
-          Cours
-        </NavLink>
-        <NavLink to="/admin/quizz" className={adminLinkClass}>
-          Quiz
-        </NavLink>
-      </nav>
-
       <DashHero eyebrow="Espace admin" title="Gestion des utilisateurs">
         <p>
           Vue d’ensemble des comptes enregistrés, avec indicateurs immédiats et

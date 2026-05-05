@@ -11,5 +11,4 @@ frontend/dist/
 .DS_Store
 .cursor/
 .claude/
-**/migrations/
 
