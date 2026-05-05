@@ -12,6 +12,12 @@ export async function getThemeMap(themeId) {
   return res.json()
 }
 
+export async function getCourseDetail(courseId) {
+  const res = await apiFetch(`/api/courses/${courseId}/`, { method: 'GET' })
+  if (!res.ok) throw new Error(`Course: ${res.status}`)
+  return res.json()
+}
+
 export async function getQuizPlay(quizId) {
   const res = await apiFetch(`/api/quizzes/${quizId}/play/`, { method: 'GET' })
   if (!res.ok) throw new Error(`Quiz play: ${res.status}`)
