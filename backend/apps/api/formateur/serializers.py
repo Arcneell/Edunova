@@ -40,6 +40,12 @@ class FormateurThemeSerializer(serializers.ModelSerializer):
         fields = ['theme_id', 'theme_title']
         read_only_fields = ['theme_id']
 
+    def validate_theme_title(self, value: str) -> str:
+        cleaned = (value or '').strip()
+        if not cleaned:
+            raise serializers.ValidationError('Le titre est requis.')
+        return cleaned
+
 
 class LearnerStatSerializer(serializers.Serializer):
     """Statistiques d'un apprenant inscrit à un cours."""
