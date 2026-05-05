@@ -2,45 +2,90 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getQuizPlay, getThemeMap, getThemes, submitQuiz } from '../api/user/learningMap.js'
 
+const MAP_PATH_POINTS = [
+  { x: 15, y: 8 },
+  { x: 28, y: 16 },
+  { x: 43, y: 12 },
+  { x: 60, y: 18 },
+  { x: 73, y: 22 },
+  { x: 80, y: 34 },
+  { x: 69, y: 43 },
+  { x: 55, y: 42 },
+  { x: 42, y: 47 },
+  { x: 30, y: 45 },
+  { x: 17, y: 50 },
+  { x: 10, y: 62 },
+  { x: 21, y: 70 },
+  { x: 33, y: 76 },
+  { x: 47, y: 73 },
+  { x: 61, y: 76 },
+  { x: 75, y: 73 },
+]
+
+function interpolatePoint(start, end, ratio) {
+  return {
+    x: start.x + (end.x - start.x) * ratio,
+    y: start.y + (end.y - start.y) * ratio,
+  }
+}
+
+function getNodePosition(index, total) {
+  if (total <= 1) return { left: '15%', top: '8%' }
+  const scaled = (index / (total - 1)) * (MAP_PATH_POINTS.length - 1)
+  const lower = Math.floor(scaled)
+  const upper = Math.min(lower + 1, MAP_PATH_POINTS.length - 1)
+  const ratio = scaled - lower
+  const point = interpolatePoint(MAP_PATH_POINTS[lower], MAP_PATH_POINTS[upper], ratio)
+  return { left: `${point.x}%`, top: `${point.y}%` }
+}
+
 export default function CourseMap() {
   const [themes, setThemes] = useState([])
   const [selectedThemeId, setSelectedThemeId] = useState('')
   const [mapData, setMapData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loadingThemes, setLoadingThemes] = useState(true)
+  const [loadingMap, setLoadingMap] = useState(false)
+  const [mapValidated, setMapValidated] = useState(false)
   const [error, setError] = useState('')
   const [activeQuiz, setActiveQuiz] = useState(null)
   const [answers, setAnswers] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [resultMessage, setResultMessage] = useState('')
 
-  async function loadMap(themeIdOverride) {
-    setLoading(true)
+  async function loadMap(themeId) {
+    setLoadingMap(true)
     setError('')
     setResultMessage('')
     try {
-      const list = await getThemes()
-      setThemes(list)
-      const nextThemeId = themeIdOverride ?? selectedThemeId ?? list[0]?.theme_id
-      if (!nextThemeId) {
+      if (!themeId) {
         setMapData({ theme_title: 'Aucune thématique', checkpoints: [] })
         return
       }
-      setSelectedThemeId(String(nextThemeId))
-      const data = await getThemeMap(nextThemeId)
+      const data = await getThemeMap(themeId)
       setMapData(data)
+      setMapValidated(true)
     } catch (e) {
       setError(e.message || 'Impossible de charger la carte.')
     } finally {
-      setLoading(false)
+      setLoadingMap(false)
     }
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadMap()
-    }, 0)
-    return () => window.clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    async function loadThemes() {
+      setLoadingThemes(true)
+      setError('')
+      try {
+        const list = await getThemes()
+        setThemes(list)
+        setSelectedThemeId(String(list[0]?.theme_id ?? ''))
+      } catch (e) {
+        setError(e.message || 'Impossible de charger les thématiques.')
+      } finally {
+        setLoadingThemes(false)
+      }
+    }
+    void loadThemes()
   }, [])
 
   const checkpoints = useMemo(() => mapData?.checkpoints ?? [], [mapData])
@@ -48,6 +93,10 @@ export default function CourseMap() {
   async function handleOpenQuiz(checkpoint) {
     setResultMessage('')
     setError('')
+    if (!checkpoint.quiz?.quiz_id) {
+      setError('Ce cours n’a pas encore de quiz associé.')
+      return
+    }
     try {
       const quiz = await getQuizPlay(checkpoint.quiz.quiz_id)
       setActiveQuiz({
@@ -80,12 +129,18 @@ export default function CourseMap() {
       )
       setActiveQuiz(null)
       setAnswers({})
-      await loadMap(selectedThemeId)
+      await loadMap(Number(selectedThemeId))
     } catch (e) {
       setError(e.data?.detail || e.message || 'Envoi du quiz impossible.')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function handleValidateMap(event) {
+    event.preventDefault()
+    setActiveQuiz(null)
+    void loadMap(Number(selectedThemeId))
   }
 
   return (
@@ -99,18 +154,18 @@ export default function CourseMap() {
       </header>
 
       <section className="card">
-        <div className="stack-form">
+        <form className="stack-form" onSubmit={handleValidateMap}>
           <label>
             Thématique
             <select
               value={selectedThemeId}
               onChange={(e) => {
-                const next = e.target.value
-                setSelectedThemeId(next)
+                setSelectedThemeId(e.target.value)
                 setActiveQuiz(null)
-                void loadMap(next)
+                setMapValidated(false)
+                setMapData(null)
               }}
-              disabled={loading || themes.length === 0}
+              disabled={loadingThemes || loadingMap || themes.length === 0}
             >
               {themes.map((theme) => (
                 <option key={theme.theme_id} value={theme.theme_id}>
@@ -119,50 +174,59 @@ export default function CourseMap() {
               ))}
             </select>
           </label>
-        </div>
+          <button
+            type="submit"
+            className="btn btn--primary"
+            disabled={!selectedThemeId || loadingThemes || loadingMap}
+          >
+            {loadingMap ? 'Chargement…' : 'Valider'}
+          </button>
+        </form>
 
-        {loading ? <p className="muted">Chargement de la map…</p> : null}
+        {loadingThemes ? <p className="muted">Chargement des thématiques…</p> : null}
         {error ? <p className="error">{error}</p> : null}
         {resultMessage ? <p className="hint">{resultMessage}</p> : null}
 
-        {!loading ? (
-          <div className="course-map">
-            {checkpoints.map((checkpoint) => (
-              <article
-                key={checkpoint.course_id}
-                className={`course-node course-node--${checkpoint.status}`}
-              >
-                <div className="course-node__head">
-                  <span className="course-node__order">#{checkpoint.map_order}</span>
-                  <span className="dash-pill dash-pill--muted">
-                    {checkpoint.status === 'completed'
-                      ? 'Terminé'
-                      : checkpoint.status === 'unlocked'
-                        ? 'Débloqué'
-                        : 'Verrouillé'}
-                  </span>
-                </div>
-                <h2>{checkpoint.title}</h2>
-                <p className="muted">
-                  Score mini: {checkpoint.quiz.min_score_to_pass}% · Meilleur score:{' '}
-                  {checkpoint.best_score}%
-                </p>
+        {!loadingThemes && !mapValidated ? (
+          <p className="hint">Sélectionne une thématique puis clique sur Valider.</p>
+        ) : null}
 
-                {checkpoint.status === 'locked' ? (
-                  <p className="hint">Valide le checkpoint précédent pour y accéder.</p>
-                ) : (
-                  <div className="hero-actions">
-                    <button
-                      type="button"
-                      className="btn btn--primary"
-                      onClick={() => void handleOpenQuiz(checkpoint)}
-                    >
-                      {checkpoint.status === 'completed' ? 'Rejouer le quiz' : 'Passer le quiz'}
-                    </button>
-                  </div>
-                )}
-              </article>
-            ))}
+        {!loadingThemes && mapValidated ? (
+          <div className="course-map">
+            <div className="course-map__board" role="img" aria-label="Carte statique des cours">
+              {checkpoints.map((checkpoint, index) => {
+                const position = getNodePosition(index, checkpoints.length)
+                const statusLabel =
+                  checkpoint.status === 'completed'
+                    ? 'Terminé'
+                    : checkpoint.status === 'unlocked'
+                      ? 'Débloqué'
+                      : 'Verrouillé'
+                return (
+                  <button
+                    key={checkpoint.course_id}
+                    type="button"
+                    className={`course-map__node course-map__node--${checkpoint.status}`}
+                    style={position}
+                    onClick={() => {
+                      if (checkpoint.status !== 'locked') void handleOpenQuiz(checkpoint)
+                    }}
+                    disabled={checkpoint.status === 'locked'}
+                    title={`${checkpoint.title} (${statusLabel})`}
+                  >
+                    <span className="course-map__node-order">{checkpoint.map_order}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {checkpoints.length > 0 ? (
+              <p className="hint">
+                Clique sur un point debloque pour lancer le quiz du cours correspondant.
+              </p>
+            ) : (
+              <p className="hint">Aucun cours disponible sur cette thématique.</p>
+            )}
           </div>
         ) : null}
       </section>

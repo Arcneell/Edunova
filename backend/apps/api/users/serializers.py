@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from apps.api.profiles.serializers import ProfileReadSerializer
-from apps.api.users.permissions import RESTRICTED_ROLES
+from apps.api.users.permissions import RESTRICTED_ROLES, is_formateur_role, is_learner_role
 from apps.edunova.models import Role, User
 
 
@@ -17,10 +17,11 @@ class RoleBriefSerializer(serializers.ModelSerializer):
 
 class MeSerializer(serializers.ModelSerializer):
     role = RoleBriefSerializer(read_only=True)
+    formateur_id = serializers.IntegerField(source='formateur.user_id', read_only=True)
 
     class Meta:
         model = User
-        fields = ('user_id', 'email', 'role', 'is_staff')
+        fields = ('user_id', 'email', 'role', 'formateur_id', 'is_staff')
         read_only_fields = fields
 
 
@@ -126,6 +127,14 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
         required=False,
     )
     profile = ProfileReadSerializer(read_only=True)
+    formateur_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='formateur',
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    formateur = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -140,6 +149,8 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
             'date_joined',
             'last_login',
             'profile',
+            'formateur',
+            'formateur_id',
         )
         read_only_fields = (
             'user_id',
@@ -150,6 +161,14 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
             'is_superuser',
         )
 
+    def get_formateur(self, obj: User):
+        if not obj.formateur_id:
+            return None
+        return {
+            'user_id': obj.formateur.user_id,
+            'email': obj.formateur.email,
+        }
+
     def validate_email(self, value: str) -> str:
         instance = self.instance
         qs = User.objects.filter(email__iexact=value)
@@ -158,3 +177,20 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError('Cette adresse e-mail est déjà utilisée.')
         return value.lower()
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        role = attrs.get('role', getattr(self.instance, 'role', None))
+        formateur = attrs.get('formateur', getattr(self.instance, 'formateur', None))
+        role_name = getattr(role, 'role_name', None)
+        if formateur:
+            formateur_role_name = getattr(getattr(formateur, 'role', None), 'role_name', None)
+            if not is_formateur_role(formateur_role_name):
+                raise serializers.ValidationError(
+                    {'formateur_id': 'Le compte lié doit avoir le rôle formateur.'}
+                )
+        if is_learner_role(role_name) and formateur is None:
+            raise serializers.ValidationError(
+                {'formateur_id': 'Un utilisateur doit être lié à un formateur.'}
+            )
+        return attrs

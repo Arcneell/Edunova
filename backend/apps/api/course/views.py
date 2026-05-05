@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.api.users.permissions import is_learner_role
 from apps.edunova.models import Course, CourseEnrollment
 from .serializers import CourseDetailSerializer, CourseListSerializer
 
@@ -20,6 +21,9 @@ class CourseListView(ListAPIView):
 
     def get_queryset(self):
         queryset = Course.objects.select_related('theme', 'validating_quiz', 'delivered_badge')
+        role_name = getattr(getattr(self.request.user, 'role', None), 'role_name', '')
+        if is_learner_role(role_name):
+            queryset = queryset.filter(created_by_id=self.request.user.formateur_id)
         theme_id = self.request.query_params.get('theme')
         if theme_id is not None:
             queryset = queryset.filter(theme_id=theme_id)
@@ -32,11 +36,17 @@ class CourseDetailView(RetrieveAPIView):
     Détail complet d'un cours (contenu + ids quiz / badge / thème).
     """
 
-    queryset = Course.objects.select_related('theme', 'validating_quiz', 'delivered_badge')
     serializer_class = CourseDetailSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'course_id'
     lookup_url_kwarg = 'course_id'
+
+    def get_queryset(self):
+        queryset = Course.objects.select_related('theme', 'validating_quiz', 'delivered_badge')
+        role_name = getattr(getattr(self.request.user, 'role', None), 'role_name', '')
+        if is_learner_role(role_name):
+            queryset = queryset.filter(created_by_id=self.request.user.formateur_id)
+        return queryset
 
 
 class MyCourseListView(ListAPIView):
@@ -65,7 +75,11 @@ class CourseEnrollView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, course_id):
-        course = get_object_or_404(Course, pk=course_id)
+        queryset = Course.objects.all()
+        role_name = getattr(getattr(request.user, 'role', None), 'role_name', '')
+        if is_learner_role(role_name):
+            queryset = queryset.filter(created_by_id=request.user.formateur_id)
+        course = get_object_or_404(queryset, pk=course_id)
         _, created = CourseEnrollment.objects.get_or_create(
             user=request.user, course=course
         )
@@ -80,7 +94,11 @@ class CourseEnrollView(APIView):
         )
 
     def delete(self, request, course_id):
-        get_object_or_404(Course, pk=course_id)
+        queryset = Course.objects.all()
+        role_name = getattr(getattr(request.user, 'role', None), 'role_name', '')
+        if is_learner_role(role_name):
+            queryset = queryset.filter(created_by_id=request.user.formateur_id)
+        get_object_or_404(queryset, pk=course_id)
         deleted, _ = CourseEnrollment.objects.filter(
             user=request.user, course_id=course_id
         ).delete()

@@ -160,6 +160,15 @@ class User(AbstractUser):
         verbose_name=_('rôle'),
         db_column='role_id',
     )
+    formateur = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='apprenants',
+        verbose_name=_('formateur référent'),
+        db_column='formateur_id',
+    )
 
     cosmetics_purchased = models.ManyToManyField(
         'edunova.Cosmetic',
@@ -442,6 +451,44 @@ class CourseEnrollment(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user_id} → {self.course_id}'
+
+
+class UserCourseProgress(models.Model):
+    progress_id = models.BigAutoField(primary_key=True, db_column='progress_id')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='course_progress',
+        db_column='user_id',
+    )
+    course = models.ForeignKey(
+        'edunova.Course',
+        on_delete=models.CASCADE,
+        related_name='user_progress',
+        db_column='course_id',
+    )
+    is_unlocked = models.BooleanField(_('débloqué'), default=False, db_column='is_unlocked')
+    is_completed = models.BooleanField(_('complété'), default=False, db_column='is_completed')
+    best_score = models.PositiveSmallIntegerField(
+        _('meilleur score'),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        db_column='best_score',
+    )
+    unlocked_at = models.DateTimeField(_('débloqué le'), null=True, blank=True)
+    completed_at = models.DateTimeField(_('complété le'), null=True, blank=True)
+    updated_at = models.DateTimeField(_('mis à jour le'), auto_now=True)
+
+    class Meta:
+        db_table = 'user_course_progress'
+        verbose_name = _('progression cours utilisateur')
+        verbose_name_plural = _('progressions cours utilisateur')
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course'], name='uniq_user_course_progress'),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.user_id} ↔ {self.course_id}'
 
 
 class ActivityLog(models.Model):

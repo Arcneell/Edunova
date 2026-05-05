@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
 
+from apps.api.users.permissions import is_learner_role
 from apps.edunova.models import Course, CourseEnrollment, Quiz, Rank, UserBadge, UserCourseProgress
 from .serializers import QuizPlaySerializer
 
@@ -16,11 +17,17 @@ class QuizPlayView(RetrieveAPIView):
     pour éviter la triche côté client.
     """
 
-    queryset = Quiz.objects.prefetch_related('questions__answers')
     serializer_class = QuizPlaySerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'quiz_id'
     lookup_url_kwarg = 'quiz_id'
+
+    def get_queryset(self):
+        queryset = Quiz.objects.prefetch_related('questions__answers')
+        role_name = getattr(getattr(self.request.user, 'role', None), 'role_name', '')
+        if is_learner_role(role_name):
+            queryset = queryset.filter(validated_courses__created_by_id=self.request.user.formateur_id)
+        return queryset
 
 
 class QuizSubmitView(APIView):
@@ -38,7 +45,13 @@ class QuizSubmitView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, quiz_id):
-        quiz = get_object_or_404(Quiz, pk=quiz_id)
+        quiz_queryset = Quiz.objects.all()
+        role_name = getattr(getattr(request.user, 'role', None), 'role_name', '')
+        if is_learner_role(role_name):
+            quiz_queryset = quiz_queryset.filter(
+                validated_courses__created_by_id=request.user.formateur_id
+            )
+        quiz = get_object_or_404(quiz_queryset.distinct(), pk=quiz_id)
         answers_input = request.data.get('answers', {})
 
         questions = list(quiz.questions.prefetch_related('answers').all())
