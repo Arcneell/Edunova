@@ -8,6 +8,7 @@ urlpatterns = [
     path('courses/', include('apps.api.course.urls')),
     path('ranks/', include('apps.api.ranks.urls')),
     path('badges/', include('apps.api.badges.urls')),
+    path('cosmetics/', include('apps.api.cosmetic.urls')),
     path('quizzes/', include('apps.api.quiz.urls')),
     path('quizzes/<int:quiz_id>/questions/', include('apps.api.question.urls')),
 ]
