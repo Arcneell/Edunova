@@ -8,12 +8,8 @@ const proxyTarget =
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   server: {
-    hmr:
-      mode === 'production'
-        ? false
-        : {
-            host: '10.10.40.220',
-            port: 80,
-          },
+    host: '0.0.0.0',
+    allowedHosts: ['edunova.digital'],
+    hmr: false
   },
 }))
