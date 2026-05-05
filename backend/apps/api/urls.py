@@ -6,6 +6,7 @@ urlpatterns = [
     path('', include('apps.api.users.urls')),
     path('profiles/', include('apps.api.profiles.urls')),
     path('roles/', include('apps.api.roles.urls')),
+    path('themes/', include('apps.api.themes.urls')),
     path('courses/', include('apps.api.course.urls')),
     path('ranks/', include('apps.api.ranks.urls')),
     path('badges/', include('apps.api.badges.urls')),
