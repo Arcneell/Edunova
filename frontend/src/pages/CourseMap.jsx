@@ -449,27 +449,38 @@ export default function CourseMap() {
                       {index + 1}. {question.question_content}
                     </legend>
                     <div className="quiz-answers-grid">
-                      {question.answers.map((answer, answerIndex) => (
-                        <label
-                          key={answer.answer_id}
-                          className={`quiz-answer quiz-answer--${answerIndex % 4}`}
-                        >
-                          <input
-                            type="radio"
-                            name={`q-${question.question_id}`}
-                            value={answer.answer_id}
-                            checked={String(answers[question.question_id] || '') === String(answer.answer_id)}
-                            onChange={(e) =>
-                              setAnswers((prev) => ({
-                                ...prev,
-                                [question.question_id]: e.target.value,
-                              }))
-                            }
-                          />
-                          <span className="quiz-answer__marker" aria-hidden="true" />
-                          <span>{answer.label_answer}</span>
-                        </label>
-                      ))}
+                      {question.answers.map((answer, answerIndex) => {
+                        const isChecked =
+                          String(answers[question.question_id] || '') === String(answer.answer_id)
+                        return (
+                          <label
+                            key={answer.answer_id}
+                            className={`quiz-answer${isChecked ? ' quiz-answer--checked' : ''}`}
+                          >
+                            <input
+                              type="radio"
+                              name={`q-${question.question_id}`}
+                              value={answer.answer_id}
+                              checked={isChecked}
+                              onChange={(e) =>
+                                setAnswers((prev) => ({
+                                  ...prev,
+                                  [question.question_id]: e.target.value,
+                                }))
+                              }
+                            />
+                            <span className="quiz-answer__letter" aria-hidden="true">
+                              {String.fromCharCode(65 + answerIndex)}
+                            </span>
+                            <span className="quiz-answer__label">{answer.label_answer}</span>
+                            <span className="quiz-answer__check" aria-hidden="true">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12.5l4.5 4.5L19 7.5" />
+                              </svg>
+                            </span>
+                          </label>
+                        )
+                      })}
                     </div>
                   </fieldset>
                 ))}
