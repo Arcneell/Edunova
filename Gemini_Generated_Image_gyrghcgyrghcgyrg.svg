@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Edunova" viewBox="0 0 864 1222" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient
+      id="edunova-mark-grad"
+      x1="0%"
+      y1="100%"
+      x2="100%"
+      y2="0%"
+      gradientUnits="objectBoundingBox"
+    >
+      <stop offset="0%" stop-color="#ff007a"/>
+      <stop offset="40%" stop-color="#7242d0"/>
+      <stop offset="100%" stop-color="#1b17ff"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0,1222) scale(0.1,-0.1)" stroke="none">
+    <path
+      fill="url(#edunova-mark-grad)"
+      d="M3365 8086 c-114 -29 -215 -111 -263 -214 l-27 -57 -3 -809 -2 -809 32 27 c174 141 488 306 582 306 73 0 134 -33 600 -324 l207 -129 -58 -38 c-700 -452 -769 -494 -862 -532 -137 -55 -304 -38 -432 45 -33 21 -62 38 -64 38 -3 0 -5 -285 -5 -633 0 -696 -1 -687 61 -780 96 -145 313 -199 482 -119 34 16 301 181 592 367 292 186 595 380 675 430 80 51 222 140 315 200 94 59 190 123 214 143 56 46 104 122 136 215 l25 76 0 568 c0 617 -1 626 -56 735 -35 70 -131 162 -229 223 -44 27 -244 152 -445 278 -201 127 -504 318 -675 425 -170 107 -359 227 -420 265 -60 39 -131 79 -156 88 -64 25 -163 31 -224 15z"
+    />
+  </g>
+</svg>
