@@ -1,0 +1,30 @@
+---
+description: Backend Django + PostgreSQL sous Docker Compose
+alwaysApply: true
+---
+
+# Backend dans Docker
+
+PostgreSQL est exposé par le service **`db`** ; le backend utilise les variables **`POSTGRES_*`** (`POSTGRES_HOST=db` dans Compose).
+
+**Conteneur déjà démarré** (`docker compose up -d`) :
+
+```bash
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py makemigrations
+docker compose exec backend python manage.py check
+```
+
+**One-shot** (l’entrypoint attend Postgres puis lance `migrate` avant la commande finale) :
+
+```bash
+docker compose run --rm backend python manage.py makemigrations edunova
+```
+
+Si `migrate` dans l’entrypoint échoue (ex. app sans migrations), générer les fichiers sans passer par l’entrypoint :
+
+```bash
+docker compose run --rm --entrypoint python backend manage.py makemigrations
+```
+
+En local **hors Docker**, pointe `POSTGRES_HOST` vers `localhost` (port mappé depuis `db`).
