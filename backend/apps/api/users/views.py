@@ -112,21 +112,6 @@ class MeView(APIView):
         return Response(MeSerializer(request.user).data)
 
 
-class MeProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        profile = request.user.profile
-        return Response(ProfileReadSerializer(profile).data)
-
-    def patch(self, request):
-        profile = request.user.profile
-        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(ProfileReadSerializer(profile).data)
-
-
 class RolesListView(generics.ListAPIView):
     """Liste des rôles (inscription, scripts de test)."""
 
