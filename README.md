@@ -96,3 +96,47 @@ Si tu changes de modèle utilisateur ou de structure d’apps sur une base déj�
 - [Docker](https://docs.docker.com/get-docker/) et Docker Compose
 
 ---
+
+## 🧪 Tests API
+
+Les tests vérifient les endpoints les plus critiques de l'application :
+
+| Module | Endpoints couverts |
+|---|---|
+| `tests.auth` | register, login, logout, `/me/` |
+| `tests.courses` | liste, détail, inscription / désinscription |
+| `tests.quiz` | lecture (anti-triche), soumission réussie / échouée |
+| `tests.cosmetics` | liste, achat, double achat, équipement, `is_equipped` |
+
+Chaque suite crée ses propres données de test et les supprime après exécution. Elle retourne un exit code égal au nombre d'échecs.
+
+### Lancement manuel
+
+```bash
+# Une suite à la fois
+docker compose exec backend python -m tests.auth
+docker compose exec backend python -m tests.courses
+docker compose exec backend python -m tests.quiz
+docker compose exec backend python -m tests.cosmetics
+```
+
+### Lancement automatique au démarrage
+
+Les tests se déclenchent après les migrations, via la variable `RUN_TESTS`. Le serveur **ne démarre pas** si un test échoue.
+
+**Linux / macOS :**
+```bash
+RUN_TESTS=1 docker compose up --build
+```
+
+**Windows PowerShell :**
+```powershell
+$env:RUN_TESTS=1 ; docker compose up --build
+```
+
+Pour les activer en permanence (CI/CD, environnement de staging), ajouter dans `.env` :
+```env
+RUN_TESTS=1
+```
+
+---

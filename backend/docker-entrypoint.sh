@@ -41,4 +41,18 @@ until python manage.py migrate --noinput; do
   sleep 2
 done
 
+if [ "${RUN_TESTS:-0}" = "1" ]; then
+  echo "[backend] Lancement des tests API…"
+  failures=0
+  for module in tests.auth tests.courses tests.quiz tests.cosmetics; do
+    echo "[test] → $module"
+    python -m "$module" || failures=$((failures + 1))
+  done
+  if [ "$failures" -gt 0 ]; then
+    echo "[backend] $failures suite(s) de tests en échec — arrêt du conteneur." >&2
+    exit 1
+  fi
+  echo "[backend] Tous les tests passent."
+fi
+
 exec "$@"

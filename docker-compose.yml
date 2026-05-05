@@ -32,6 +32,8 @@ services:
       # Dans Compose, le backend joint le service Postgres par son nom d’hôte interne.
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      # Mettre à 1 pour lancer les tests API au démarrage (bloque si échec).
+      RUN_TESTS: "${RUN_TESTS:-0}"
     depends_on:
       db:
         condition: service_healthy
