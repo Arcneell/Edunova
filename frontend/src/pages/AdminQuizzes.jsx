@@ -13,6 +13,7 @@ import {
   updateFormateurQuestion,
   updateFormateurQuiz,
 } from '../api/user/formateur.js'
+import { ModalOverlayPortal } from '../components/ModalOverlayPortal.jsx'
 
 function formatApiError(data) {
   if (!data || typeof data !== 'object') return null
@@ -648,8 +649,7 @@ export default function AdminQuizzes() {
       </section>
 
       {newQuizOpen ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Nouveau quiz"
@@ -699,12 +699,11 @@ export default function AdminQuizzes() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
 
       {editQuestion ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Modifier question"
@@ -754,12 +753,11 @@ export default function AdminQuizzes() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
 
       {editAnswer ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Modifier réponse"
@@ -806,7 +804,7 @@ export default function AdminQuizzes() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
     </div>
   )

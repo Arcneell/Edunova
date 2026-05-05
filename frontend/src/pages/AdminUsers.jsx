@@ -18,6 +18,7 @@ import {
   PaginationBar,
   StatCard,
 } from '../components/dash/index.js'
+import { ModalOverlayPortal } from '../components/ModalOverlayPortal.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 
 function stripOrigin(url) {
@@ -367,8 +368,7 @@ export default function AdminUsers() {
       </DashPanel>
 
       {createOpen ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Créer un utilisateur"
@@ -465,12 +465,11 @@ export default function AdminUsers() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
 
       {editUserId != null && editForm ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Modifier un utilisateur"
@@ -574,10 +573,9 @@ export default function AdminUsers() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : editUserId != null && !editForm ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Chargement utilisateur"
@@ -601,7 +599,7 @@ export default function AdminUsers() {
               Fermer
             </button>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
     </DashLayout>
   )

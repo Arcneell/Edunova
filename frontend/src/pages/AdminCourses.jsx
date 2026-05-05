@@ -9,6 +9,7 @@ import {
   updateFormateurCourse,
 } from '../api/user/formateur.js'
 import { getThemes } from '../api/user/learningMap.js'
+import { ModalOverlayPortal } from '../components/ModalOverlayPortal.jsx'
 
 function formatApiError(data) {
   if (!data || typeof data !== 'object') return null
@@ -286,8 +287,7 @@ export default function AdminCourses() {
       </section>
 
       {createOpen ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Nouveau cours"
@@ -383,12 +383,11 @@ export default function AdminCourses() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
 
       {editingCourse ? (
-        <div
-          className="course-map-modal__overlay"
+        <ModalOverlayPortal
           role="dialog"
           aria-modal="true"
           aria-label="Modifier un cours"
@@ -483,7 +482,7 @@ export default function AdminCourses() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlayPortal>
       ) : null}
     </div>
   )
