@@ -8,17 +8,22 @@ class FormateurThemeApiTests(APITestCase):
     def setUp(self):
         self.role_fm = Role.objects.create(role_name='formateur', role_rights={})
         self.role_el = Role.objects.create(role_name='élève', role_rights={})
-        self.fm = User.objects.create_user(
+        # ``User`` a USERNAME_FIELD='email' mais hérite du UserManager Django
+        # standard qui exige un ``username`` positionnel : on instancie donc
+        # directement le modèle (ce que fait aussi le seed et le RegisterSerializer).
+        self.fm = User(
             email='formateur-theme-api@test.invalid',
-            password='test-password',
             role=self.role_fm,
         )
-        self.el = User.objects.create_user(
+        self.fm.set_password('test-password')
+        self.fm.save()
+        self.el = User(
             email='eleve-theme-api@test.invalid',
-            password='test-password',
             role=self.role_el,
             formateur=self.fm,
         )
+        self.el.set_password('test-password')
+        self.el.save()
 
     def test_eleve_ne_peut_pas_creer_de_theme(self):
         self.client.force_authenticate(user=self.el)
