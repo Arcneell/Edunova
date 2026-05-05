@@ -704,9 +704,38 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.stack-form input[aria-invalid='true'],
+.stack-form textarea[aria-invalid='true'],
+.stack-form select[aria-invalid='true'] {
+  border-color: color-mix(in srgb, var(--danger) 75%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
 .stack-form textarea {
   resize: vertical;
   min-height: 130px;
+}
+
+.field-error {
+  margin-top: 0.1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--danger);
+}
+
+.form-alert {
+  margin: 0.15rem 0 0.35rem;
+  padding: 0.72rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.8625rem;
+  line-height: 1.45;
+  border: 1px solid transparent;
+}
+
+.form-alert--error {
+  color: color-mix(in srgb, var(--danger) 88%, #3a030f);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .stack-form button[type='submit'] {

@@ -1,5 +1,7 @@
 """Sérialiseurs compte utilisateur (élève) et gestion staff."""
 
+import re
+
 from django.contrib.auth import authenticate
 
 from rest_framework import serializers
@@ -51,6 +53,17 @@ class RegisterSerializer(serializers.Serializer):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('Cette adresse e-mail est déjà enregistrée.')
         return value.lower()
+
+    def validate_password(self, value: str) -> str:
+        if len(value) < 8:
+            raise serializers.ValidationError(
+                'Le mot de passe doit contenir au moins 8 caractères.'
+            )
+        if re.search(r'[^A-Za-z0-9]', value) is None:
+            raise serializers.ValidationError(
+                'Le mot de passe doit contenir au moins un caractère spécial.'
+            )
+        return value
 
     def validate(self, attrs: dict) -> dict:
         role = attrs.get('role')
