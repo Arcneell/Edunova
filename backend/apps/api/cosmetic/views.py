@@ -117,14 +117,6 @@ class EquipCosmeticView(APIView):
 
         cosmetic = get_object_or_404(Cosmetic, pk=cosmetic_id)
 
-        if not UserCosmeticPurchase.objects.filter(
-            user=request.user, cosmetic=cosmetic
-        ).exists():
-            return Response(
-                {'detail': "Vous ne possédez pas ce cosmétique."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         profile_field = CATEGORY_TO_PROFILE_FIELD.get(cosmetic.cosmetic_category)
         if not profile_field:
             return Response(

@@ -25,11 +25,18 @@ class RoleBriefSerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     role = RoleBriefSerializer(read_only=True)
     formateur_id = serializers.IntegerField(source='formateur.user_id', read_only=True)
+    current_avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('user_id', 'email', 'role', 'formateur_id', 'is_staff')
+        fields = ('user_id', 'email', 'role', 'formateur_id', 'is_staff', 'current_avatar_url')
         read_only_fields = fields
+
+    def get_current_avatar_url(self, obj) -> str:
+        try:
+            return obj.profile.current_avatar_url or ''
+        except Exception:
+            return ''
 
 
 class MeUpdateSerializer(serializers.ModelSerializer):
