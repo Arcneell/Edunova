@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getBadges } from '../api/user/badges.js'
 import {
   createFormateurCourse,
+  createFormateurTheme,
   deleteFormateurCourse,
+  deleteFormateurTheme,
   getFormateurCourses,
   getFormateurQuizzes,
   updateFormateurCourse,
@@ -31,6 +33,8 @@ const emptyCourseForm = () => ({
   delivered_badge: '',
 })
 
+const COURSES_PER_PAGE = 8
+
 export default function AdminCourses() {
   const [courses, setCourses] = useState([])
   const [themes, setThemes] = useState([])
@@ -46,6 +50,11 @@ export default function AdminCourses() {
   const [editForm, setEditForm] = useState(emptyCourseForm)
   const [savingEdit, setSavingEdit] = useState(false)
   const [modalError, setModalError] = useState('')
+  const [creatingTheme, setCreatingTheme] = useState(false)
+  const [newThemeTitle, setNewThemeTitle] = useState('')
+  const [categoryError, setCategoryError] = useState('')
+  const [deletingThemeId, setDeletingThemeId] = useState(null)
+  const [coursePage, setCoursePage] = useState(1)
 
   const loadRefs = useCallback(async () => {
     setLoadingRefs(true)
@@ -92,6 +101,18 @@ export default function AdminCourses() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement cours
     void loadCourses()
   }, [loadCourses])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- repli sur la dernière page si la liste raccourcit
+    const maxPage = Math.max(1, Math.ceil(courses.length / COURSES_PER_PAGE))
+    setCoursePage((p) => Math.min(Math.max(1, p), maxPage))
+  }, [courses.length])
+
+  const coursePageCount = Math.max(1, Math.ceil(courses.length / COURSES_PER_PAGE))
+  const paginatedCourses = useMemo(() => {
+    const start = (coursePage - 1) * COURSES_PER_PAGE
+    return courses.slice(start, start + COURSES_PER_PAGE)
+  }, [courses, coursePage])
 
   function openCreate() {
     setModalError('')
@@ -232,6 +253,40 @@ export default function AdminCourses() {
     }
   }
 
+  async function handleCreateTheme(event) {
+    event.preventDefault()
+    const title = newThemeTitle.trim()
+    if (!title) {
+      setCategoryError('Indiquez un nom de catégorie.')
+      return
+    }
+    setCategoryError('')
+    setCreatingTheme(true)
+    try {
+      await createFormateurTheme({ theme_title: title })
+      setNewThemeTitle('')
+      await loadRefs()
+    } catch (e) {
+      setCategoryError(formatApiError(e.data) || e?.message || 'Création de la catégorie impossible.')
+    } finally {
+      setCreatingTheme(false)
+    }
+  }
+
+  async function handleDeleteTheme(theme) {
+    if (!window.confirm(`Supprimer la catégorie « ${theme.theme_title} » ?`)) return
+    setCategoryError('')
+    setDeletingThemeId(theme.theme_id)
+    try {
+      await deleteFormateurTheme(theme.theme_id)
+      await loadRefs()
+    } catch (e) {
+      setCategoryError(formatApiError(e.data) || e?.message || 'Suppression impossible.')
+    } finally {
+      setDeletingThemeId(null)
+    }
+  }
+
   return (
     <div className="page">
       <header className="page-header page-header--split">
@@ -252,15 +307,83 @@ export default function AdminCourses() {
         </div>
       </header>
 
-      <section className="admin-cards">
-        {loading || loadingRefs ? <p className="muted">Chargement…</p> : null}
+      <div className="admin-courses-page__categories-wrap">
+        <details className="admin-category-details">
+          <summary>
+            Catégories
+            <span className="muted admin-category-summary__meta">
+              {loadingRefs ? ' — …' : ` — ${themes.length} ${themes.length > 1 ? 'thèmes' : 'thème'} · créer ou supprimer`}
+            </span>
+          </summary>
+          <div className="admin-category-details__panel">
+            <p className="admin-category-details__hint muted">
+              Utilisées pour ranger les cours sur la carte. Impossible de supprimer un thème encore lié à un cours.
+            </p>
+            {categoryError ? <p className="error">{categoryError}</p> : null}
+            <form className="admin-category-details__toolbar" onSubmit={handleCreateTheme}>
+              <label htmlFor="new-theme-title-input">
+                Nouvelle catégorie
+                <input
+                  id="new-theme-title-input"
+                  type="text"
+                  value={newThemeTitle}
+                  onChange={(e) => setNewThemeTitle(e.target.value)}
+                  placeholder="Ex. Sciences"
+                  disabled={loadingRefs || creatingTheme}
+                  autoComplete="off"
+                />
+              </label>
+              <button type="submit" className="btn btn--primary" disabled={loadingRefs || creatingTheme}>
+                {creatingTheme ? 'Ajout…' : 'Ajouter'}
+              </button>
+            </form>
+            {loadingRefs ? (
+              <p className="muted admin-category-loading">Chargement…</p>
+            ) : themes.length === 0 ? (
+              <p className="muted admin-category-loading">Aucune catégorie.</p>
+            ) : (
+              <ul className="admin-category-details__list" aria-label="Liste des catégories">
+                {themes.map((th) => (
+                  <li key={th.theme_id} className="admin-category-details__row">
+                    <span>
+                      <strong>{th.theme_title}</strong>
+                      <span className="muted"> · #{th.theme_id}</span>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      onClick={() => handleDeleteTheme(th)}
+                      disabled={deletingThemeId === th.theme_id}
+                    >
+                      {deletingThemeId === th.theme_id ? '…' : 'Supprimer'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </details>
+      </div>
+
+      <div className="admin-courses-page__divider">
+        <h2 className="admin-courses-page__section-title" id="courses-section-title">
+          Cours
+        </h2>
+        <p className="admin-courses-page__section-meta muted">
+          Liste des parcours rattachés à un thème et à un quiz de validation.
+        </p>
+      </div>
+
+      <section className="admin-cards" aria-labelledby="courses-section-title">
+        {loading ? <p className="muted">Chargement des cours…</p> : null}
+        {loadingRefs && !loading ? <p className="muted">Chargement des références…</p> : null}
         {error ? <p className="error">{error}</p> : null}
         {!loading && !error && courses.length === 0 ? (
           <p className="dash-empty">Aucun cours disponible en base.</p>
         ) : null}
 
         {!loading && !error
-          ? courses.map((course) => (
+          ? paginatedCourses.map((course) => (
               <article key={course.course_id} className="card admin-card">
                 <div className="admin-card__head">
                   <h2>{course.course_title}</h2>
@@ -284,6 +407,39 @@ export default function AdminCourses() {
               </article>
             ))
           : null}
+
+        {!loading && !error && courses.length > 0 ? (
+          <div className="admin-pagination admin-pagination--full-span">
+            <p className="admin-pagination__meta">
+              {coursePageCount > 1
+                ? `Affichage ${(coursePage - 1) * COURSES_PER_PAGE + 1}–${Math.min(coursePage * COURSES_PER_PAGE, courses.length)} sur ${courses.length} cours`
+                : `${courses.length} cours affichés`}
+            </p>
+            {coursePageCount > 1 ? (
+              <div className="admin-pagination__nav">
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={coursePage <= 1}
+                  onClick={() => setCoursePage((p) => Math.max(1, p - 1))}
+                >
+                  Précédent
+                </button>
+                <span className="muted">
+                  Page {coursePage} / {coursePageCount}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={coursePage >= coursePageCount}
+                  onClick={() => setCoursePage((p) => Math.min(coursePageCount, p + 1))}
+                >
+                  Suivant
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {createOpen ? (

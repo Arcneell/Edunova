@@ -1,5 +1,23 @@
 import { apiFetch } from './http.js'
 
+export async function createFormateurTheme(payload) {
+  const res = await apiFetch('/api/formateur/themes/', {
+    method: 'POST',
+    body: payload,
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw Object.assign(new Error('Create formateur theme'), { data, status: res.status })
+  return data
+}
+
+export async function deleteFormateurTheme(themeId) {
+  const res = await apiFetch(`/api/formateur/themes/${themeId}/`, { method: 'DELETE' })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw Object.assign(new Error('Delete formateur theme'), { data, status: res.status })
+  }
+}
+
 export async function getFormateurCourses() {
   const res = await apiFetch('/api/formateur/courses/', { method: 'GET' })
   const data = await res.json().catch(() => [])

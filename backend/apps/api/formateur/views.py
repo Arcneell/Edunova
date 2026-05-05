@@ -5,12 +5,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.api.users.permissions import IsStaffOrFormateur
-from apps.edunova.models import ActivityLog, Answer, Course, CourseEnrollment, Question, Quiz, UserBadge
+from apps.edunova.models import ActivityLog, Answer, Course, CourseEnrollment, Question, Quiz, Theme, UserBadge
 from .serializers import (
     FormateurAnswerSerializer,
     FormateurCourseSerializer,
     FormateurQuestionSerializer,
     FormateurQuizSerializer,
+    FormateurThemeSerializer,
     LearnerStatSerializer,
 )
 
@@ -94,6 +95,40 @@ class FormateurCourseDetailView(APIView):
             action=ActivityLog.Action.COURSE_DELETE,
             metadata={'course_id': course_id},
         )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Catégories (thèmes) ─────────────────────────────────────────────────────────
+
+class FormateurThemeListCreateView(APIView):
+    """POST /api/formateur/themes/ — créer une catégorie (thème pédagogique)."""
+
+    permission_classes = FORMATEUR_PERMISSIONS
+
+    def post(self, request):
+        serializer = FormateurThemeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class FormateurThemeDetailView(APIView):
+    """DELETE /api/formateur/themes/<theme_id>/"""
+
+    permission_classes = FORMATEUR_PERMISSIONS
+
+    def delete(self, request, theme_id):
+        theme = get_object_or_404(Theme, pk=theme_id)
+        if Course.objects.filter(theme=theme).exists():
+            return Response(
+                {
+                    'detail': (
+                        'Impossible de supprimer cette catégorie : des cours y sont encore rattachés.'
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        theme.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
