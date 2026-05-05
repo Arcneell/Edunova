@@ -1,5 +1,5 @@
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 
 from apps.edunova.models import Role
 from .serializers import RoleSerializer
@@ -13,4 +13,4 @@ class RoleListView(ListAPIView):
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]

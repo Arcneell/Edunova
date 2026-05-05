@@ -6,6 +6,7 @@ import {
   updateFormateurCourse,
 } from '../api/user/formateur.js'
 import { useAuth } from '../hooks/useAuth.js'
+import { getReadableFormError } from '../utils/formErrors.js'
 
 function adminLinkClass({ isActive }) {
   return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
@@ -44,8 +45,7 @@ export default function AdminCourses() {
       const data = await getFormateurCourses()
       setCourses(Array.isArray(data) ? data : [])
     } catch (e) {
-      const message = e?.data?.detail || e?.message || 'Impossible de charger les cours.'
-      setError(message)
+      setError(getReadableFormError(e, 'Impossible de charger la liste des cours pour le moment.'))
     } finally {
       setLoading(false)
     }
@@ -62,8 +62,7 @@ export default function AdminCourses() {
       await deleteFormateurCourse(course.course_id)
       await loadCourses()
     } catch (e) {
-      const message = e?.data?.detail || e?.message || 'Suppression impossible.'
-      setError(message)
+      setError(getReadableFormError(e, 'La suppression du cours a échoué. Réessayez.'))
     }
   }
 
@@ -103,8 +102,7 @@ export default function AdminCourses() {
       await loadCourses()
       setEditingCourse(null)
     } catch (e) {
-      const message = e?.data?.detail || e?.message || 'Modification impossible.'
-      setError(message)
+      setError(getReadableFormError(e, 'La modification du cours a échoué. Vérifiez les champs et réessayez.'))
     } finally {
       setSavingEdit(false)
     }

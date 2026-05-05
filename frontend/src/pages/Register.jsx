@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listRoles } from '../api/user/roles.js'
 import { useAuth } from '../hooks/useAuth.js'
+import { getReadableFormError } from '../utils/formErrors.js'
 
 function normalizeRoleName(name) {
   return String(name || '')
@@ -19,17 +20,36 @@ export default function Register() {
   const [roleId, setRoleId] = useState('')
   const [roles, setRoles] = useState([])
   const [err, setErr] = useState(null)
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  function validateForm() {
+    const nextErrors = {}
+    const cleanEmail = email.trim()
+    if (!cleanEmail) nextErrors.email = "L'adresse e-mail est obligatoire."
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      nextErrors.email = 'Entrez une adresse e-mail valide (exemple: nom@domaine.com).'
+    }
+    if (!password) nextErrors.password = 'Le mot de passe est obligatoire.'
+    else if (password.length < 8) nextErrors.password = 'Le mot de passe doit contenir au moins 8 caractères.'
+    else if (!/[^A-Za-z0-9]/.test(password)) {
+      nextErrors.password = 'Le mot de passe doit contenir au moins un caractère spécial.'
+    }
+    if (!roleId) nextErrors.roleId = 'Choisissez un role dans la liste.'
+    setFieldErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
 
   useEffect(() => {
     let cancelled = false
     listRoles()
       .then((rows) => {
         if (cancelled) return
-        const allowed = (Array.isArray(rows) ? rows : []).filter((r) => {
+        const allRoles = Array.isArray(rows) ? rows : []
+        const allowed = allRoles.filter((r) => {
           const n = normalizeRoleName(r.role_name)
-          return n === 'utilisateur' || n === 'formateur'
+          return n === 'utilisateur' || n === 'formateur' || n === 'etudiant' || n === 'enseignant'
         })
-        setRoles(allowed)
+        setRoles(allowed.length > 0 ? allowed : allRoles)
       })
       .catch(() => {
         if (!cancelled) setRoles([])
@@ -42,22 +62,13 @@ export default function Register() {
   async function onSubmit(e) {
     e.preventDefault()
     setErr(null)
-    if (roleId === '') {
-      setErr('Veuillez choisir un rôle : Utilisateur ou Formateur.')
-      return
-    }
+    if (!validateForm()) return
     try {
-      const payload = { email, password, role_id: Number(roleId) }
+      const payload = { email: email.trim(), password, role_id: Number(roleId) }
       const me = await register(payload)
       navigate(me.is_staff ? '/admin' : '/compte', { replace: true })
     } catch (ex) {
-      const msg =
-        typeof ex.data === 'object'
-          ? Object.entries(ex.data || {})
-              .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-              .join(' · ')
-          : ''
-      setErr(msg || ex.message || 'Erreur')
+      setErr(getReadableFormError(ex, "Impossible de finaliser l'inscription. Vérifiez les champs du formulaire."))
     }
   }
 
@@ -78,16 +89,21 @@ export default function Register() {
         </section>
 
         <article className="card card--narrow auth-card">
-          <form className="stack-form" onSubmit={onSubmit}>
+          <form className="stack-form" onSubmit={onSubmit} noValidate>
             <label>
               E-mail
               <input
                 type="email"
                 autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
+                }}
                 required
+                aria-invalid={fieldErrors.email ? 'true' : 'false'}
               />
+              {fieldErrors.email ? <span className="field-error">{fieldErrors.email}</span> : null}
             </label>
             <label>
               Mot de passe (au moins 8 caractères)
@@ -96,13 +112,26 @@ export default function Register() {
                 autoComplete="new-password"
                 value={password}
                 minLength={8}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }))
+                }}
                 required
+                aria-invalid={fieldErrors.password ? 'true' : 'false'}
               />
+              {fieldErrors.password ? <span className="field-error">{fieldErrors.password}</span> : null}
             </label>
             <label>
               Rôle
-              <select value={roleId} onChange={(e) => setRoleId(e.target.value)} required>
+              <select
+                value={roleId}
+                onChange={(e) => {
+                  setRoleId(e.target.value)
+                  if (fieldErrors.roleId) setFieldErrors((prev) => ({ ...prev, roleId: undefined }))
+                }}
+                required
+                aria-invalid={fieldErrors.roleId ? 'true' : 'false'}
+              >
                 <option value="">-- choisir un rôle --</option>
                 {roles.map((r) => (
                   <option key={r.role_id} value={r.role_id}>
@@ -110,8 +139,9 @@ export default function Register() {
                   </option>
                 ))}
               </select>
+              {fieldErrors.roleId ? <span className="field-error">{fieldErrors.roleId}</span> : null}
             </label>
-            {err ? <p className="error">{err}</p> : null}
+            {err ? <p className="form-alert form-alert--error">{err}</p> : null}
             <button type="submit">Créer le compte</button>
           </form>
           <p className="form-footer muted">
