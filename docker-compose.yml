@@ -1,16 +1,17 @@
 # Migrations Django au démarrage du service « backend », pas pendant docker build (cf. docker-entrypoint.sh).
+# Les identifiants PostgreSQL viennent uniquement du fichier « .env » à la racine (voir .env.example).
 
 services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-edunova}
-      POSTGRES_USER: ${POSTGRES_USER:-edunova}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edunova}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 3s
@@ -25,14 +26,12 @@ services:
       - ./backend:/app
     ports:
       - "${BACKEND_PORT:-8000}:8000"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-edunova}
-      POSTGRES_USER: ${POSTGRES_USER:-edunova}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edunova}
-      POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
     env_file:
       - .env
+    environment:
+      # Dans Compose, le backend joint le service Postgres par son nom d’hôte interne.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
     depends_on:
       db:
         condition: service_healthy
