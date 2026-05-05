@@ -12,6 +12,7 @@ import CourseMap from './pages/CourseMap.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
 import AdminCourses from './pages/AdminCourses.jsx'
+import AdminLogs from './pages/AdminLogs.jsx'
 import AdminQuizzes from './pages/AdminQuizzes.jsx'
 
 export default function App() {
@@ -75,6 +76,14 @@ export default function App() {
             <RequireAdminOrTrainer>
               <AdminQuizzes />
             </RequireAdminOrTrainer>
+          }
+        />
+        <Route
+          path="/admin/logs"
+          element={
+            <RequireStaff>
+              <AdminLogs />
+            </RequireStaff>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

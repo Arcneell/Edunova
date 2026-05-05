@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import CourseMapBoardSvg from '../components/CourseMapBoardSvg.jsx'
 import { getQuizPlay, getThemeMap, getThemes, submitQuiz } from '../api/user/learningMap.js'
+import { getReadableFormError } from '../utils/formErrors.js'
 
 const COURSE_FIXED_POINTS = [
   { x: 18.0, y: 88.8 },
@@ -74,7 +75,7 @@ export default function CourseMap() {
       setMapData(data)
       setMapValidated(true)
     } catch (e) {
-      setError(e.message || 'Impossible de charger la carte.')
+      setError(getReadableFormError(e, 'Impossible de charger la carte pour cette thématique.'))
     } finally {
       setLoadingMap(false)
     }
@@ -98,7 +99,7 @@ export default function CourseMap() {
         setThemes(list)
         setSelectedThemeId(String(list[0]?.theme_id ?? ''))
       } catch (e) {
-        setError(e.message || 'Impossible de charger les thématiques.')
+        setError(getReadableFormError(e, 'Impossible de charger la liste des thématiques.'))
       } finally {
         setLoadingThemes(false)
       }
@@ -136,7 +137,7 @@ export default function CourseMap() {
       })
       setAnswers({})
     } catch (e) {
-      setError(e.message || 'Impossible de charger le quiz.')
+      setError(getReadableFormError(e, 'Impossible de charger ce quiz pour le moment.'))
     }
   }
 
@@ -162,7 +163,7 @@ export default function CourseMap() {
       setAnswers({})
       await loadMap(Number(selectedThemeId))
     } catch (e) {
-      setError(e.data?.detail || e.message || 'Envoi du quiz impossible.')
+      setError(getReadableFormError(e, "L'envoi des réponses a échoué. Réessayez."))
     } finally {
       setSubmitting(false)
     }

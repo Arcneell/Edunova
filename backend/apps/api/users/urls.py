@@ -3,7 +3,7 @@
 from django.urls import path
 
 from apps.api.badges.views import MyBadgeListView
-from apps.api.cosmetic.views import MyPurchaseListView
+from apps.api.cosmetic.views import EquipCosmeticView, MyPurchaseListView
 from apps.api.course.views import MyCourseListView
 from apps.api.profiles.views import CurrentUserProfileView
 from apps.api.users import views
@@ -18,6 +18,8 @@ urlpatterns = [
     path('me/courses/', MyCourseListView.as_view(), name='api_me_courses'),
     path('me/badges/', MyBadgeListView.as_view(), name='api_me_badges'),
     path('me/purchases/', MyPurchaseListView.as_view(), name='api_me_purchases'),
+    path('me/equip/', EquipCosmeticView.as_view(), name='api_me_equip'),
     path('admin/users/', views.AdminUserListCreateView.as_view(), name='api_admin_users_list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='api_admin_users_detail'),
+    path('admin/logs/', views.AdminActivityLogListView.as_view(), name='api_admin_logs'),
 ]

@@ -184,9 +184,19 @@ export default function Navbar() {
 
           {!loading && user ? (
             <div className="navbar__mobile-account">
-              <span className="navbar__avatar" aria-hidden="true">
-                {(user.email || '?')[0].toUpperCase()}
-              </span>
+              <Link to="/compte" className="navbar__avatar-link" onClick={closeMobile}>
+                {user.current_avatar_url ? (
+                  <img
+                    className="navbar__avatar navbar__avatar--img"
+                    src={user.current_avatar_url}
+                    alt="Mon profil"
+                  />
+                ) : (
+                  <span className="navbar__avatar" aria-hidden="true">
+                    {(user.email || '?')[0].toUpperCase()}
+                  </span>
+                )}
+              </Link>
               <span className="navbar__email-mobile">{user.email}</span>
               <button
                 type="button"
@@ -205,9 +215,19 @@ export default function Navbar() {
         <div className="navbar__actions">
           {!loading && user ? (
             <div className="navbar__user-bar">
-              <span className="navbar__avatar" aria-hidden="true">
-                {(user.email || '?')[0].toUpperCase()}
-              </span>
+              <Link to="/compte" className="navbar__avatar-link">
+                {user.current_avatar_url ? (
+                  <img
+                    className="navbar__avatar navbar__avatar--img"
+                    src={user.current_avatar_url}
+                    alt="Mon profil"
+                  />
+                ) : (
+                  <span className="navbar__avatar" aria-hidden="true">
+                    {(user.email || '?')[0].toUpperCase()}
+                  </span>
+                )}
+              </Link>
               <span className="navbar__email" title={user.email}>
                 {user.email}
               </span>

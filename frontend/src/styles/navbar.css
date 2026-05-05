@@ -373,6 +373,25 @@
   color: var(--accent);
   background: var(--accent-soft);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.navbar__avatar--img {
+  padding: 0;
+  object-fit: cover;
+}
+
+.navbar__avatar-link {
+  display: inline-flex;
+  flex-shrink: 0;
+  border-radius: 10px;
+  outline-offset: 2px;
+}
+
+.navbar__avatar-link:hover .navbar__avatar {
+  opacity: 0.85;
+  transform: scale(1.05);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .navbar__email {

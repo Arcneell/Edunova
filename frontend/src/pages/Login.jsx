@@ -34,14 +34,14 @@ export default function Login() {
     if (!validateForm()) return
     try {
       const me = await login({ email: email.trim(), password })
-      navigate(me.is_staff ? '/admin' : '/dashboard', { replace: true })
+      navigate(me.is_staff ? '/admin' : '/compte', { replace: true })
     } catch (ex) {
       setErr(getReadableFormError(ex, 'Impossible de se connecter avec ces identifiants.'))
     }
   }
 
   if (!loading && user) {
-    return <Navigate to={user.is_staff ? '/admin' : '/dashboard'} replace />
+    return <Navigate to={user.is_staff ? '/admin' : '/compte'} replace />
   }
 
   return (

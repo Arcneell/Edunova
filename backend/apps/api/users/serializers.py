@@ -1,11 +1,18 @@
 """Sérialiseurs compte utilisateur (élève) et gestion staff."""
 
+import re
+
 from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
 from apps.api.profiles.serializers import ProfileReadSerializer
-from apps.api.users.permissions import RESTRICTED_ROLES, is_formateur_role, is_learner_role
+from apps.api.users.permissions import (
+    REGISTERABLE_SIGNUP_ROLES,
+    normalize_role_name_ascii,
+    is_formateur_role,
+    is_learner_role,
+)
 from apps.edunova.models import Role, User
 
 
@@ -18,11 +25,18 @@ class RoleBriefSerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     role = RoleBriefSerializer(read_only=True)
     formateur_id = serializers.IntegerField(source='formateur.user_id', read_only=True)
+    current_avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('user_id', 'email', 'role', 'formateur_id', 'is_staff')
+        fields = ('user_id', 'email', 'role', 'formateur_id', 'is_staff', 'current_avatar_url')
         read_only_fields = fields
+
+    def get_current_avatar_url(self, obj) -> str:
+        try:
+            return obj.profile.current_avatar_url or ''
+        except Exception:
+            return ''
 
 
 class MeUpdateSerializer(serializers.ModelSerializer):
@@ -52,12 +66,27 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError('Cette adresse e-mail est déjà enregistrée.')
         return value.lower()
 
+    def validate_password(self, value: str) -> str:
+        if len(value) < 8:
+            raise serializers.ValidationError(
+                'Le mot de passe doit contenir au moins 8 caractères.'
+            )
+        if re.search(r'[^A-Za-z0-9]', value) is None:
+            raise serializers.ValidationError(
+                'Le mot de passe doit contenir au moins un caractère spécial.'
+            )
+        return value
+
     def validate(self, attrs: dict) -> dict:
         role = attrs.get('role')
-        if role and role.role_name.strip().lower() in RESTRICTED_ROLES:
-            raise serializers.ValidationError(
-                {'role_id': 'Ce rôle ne peut pas être assigné à l\'inscription.'}
-            )
+        if role:
+            key = normalize_role_name_ascii(role.role_name)
+            if key not in REGISTERABLE_SIGNUP_ROLES:
+                raise serializers.ValidationError(
+                    {
+                        'role_id': 'Ce rôle ne peut pas être choisi à l’inscription.'
+                    }
+                )
         return attrs
 
     def create(self, validated_data: dict) -> User:

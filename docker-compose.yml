@@ -32,6 +32,8 @@ services:
       # Dans Compose, le backend joint le service Postgres par son nom d’hôte interne.
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      # Mettre à 1 pour lancer les tests API au démarrage (bloque si échec).
+      RUN_TESTS: "${RUN_TESTS:-0}"
     depends_on:
       db:
         condition: service_healthy
@@ -46,7 +48,10 @@ services:
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # Laisser vide : le frontend utilise des chemins relatifs (/api/…) que le
+      # proxy Vite route vers backend:8000 (réseau interne). Les cookies de session
+      # fonctionnent car tout reste sur la même origine (localhost:5173).
+      VITE_API_URL: ${VITE_API_URL:-}
       # Cible du proxy Vite (/api → backend) quand le front tourne dans Compose
       VITE_API_PROXY_TARGET: http://backend:8000
 

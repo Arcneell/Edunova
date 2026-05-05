@@ -12,6 +12,7 @@ import {
 } from '../api/user/formateur.js'
 import { getThemes } from '../api/user/learningMap.js'
 import { ModalOverlayPortal } from '../components/ModalOverlayPortal.jsx'
+import { getReadableFormError } from '../utils/formErrors.js'
 
 function formatApiError(data) {
   if (!data || typeof data !== 'object') return null
@@ -54,7 +55,7 @@ export default function AdminCourses() {
   const [newThemeTitle, setNewThemeTitle] = useState('')
   const [categoryError, setCategoryError] = useState('')
   const [deletingThemeId, setDeletingThemeId] = useState(null)
-  const [coursePage, setCoursePage] = useState(1)
+  const [coursePageRequested, setCoursePageRequested] = useState(1)
 
   const loadRefs = useCallback(async () => {
     setLoadingRefs(true)
@@ -81,12 +82,7 @@ export default function AdminCourses() {
       const data = await getFormateurCourses()
       setCourses(Array.isArray(data) ? data : [])
     } catch (e) {
-      const message =
-        formatApiError(e.data) ||
-        (typeof e?.data === 'object' ? JSON.stringify(e.data) : null) ||
-        e?.message ||
-        'Impossible de charger les cours.'
-      setError(message)
+      setError(getReadableFormError(e, 'Impossible de charger la liste des cours pour le moment.'))
     } finally {
       setLoading(false)
     }
@@ -102,13 +98,8 @@ export default function AdminCourses() {
     void loadCourses()
   }, [loadCourses])
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- repli sur la dernière page si la liste raccourcit
-    const maxPage = Math.max(1, Math.ceil(courses.length / COURSES_PER_PAGE))
-    setCoursePage((p) => Math.min(Math.max(1, p), maxPage))
-  }, [courses.length])
-
   const coursePageCount = Math.max(1, Math.ceil(courses.length / COURSES_PER_PAGE))
+  const coursePage = Math.min(Math.max(1, coursePageRequested), coursePageCount)
   const paginatedCourses = useMemo(() => {
     const start = (coursePage - 1) * COURSES_PER_PAGE
     return courses.slice(start, start + COURSES_PER_PAGE)
@@ -128,7 +119,7 @@ export default function AdminCourses() {
       await deleteFormateurCourse(course.course_id)
       await loadCourses()
     } catch (e) {
-      setError(formatApiError(e.data) || e?.message || 'Suppression impossible.')
+      setError(getReadableFormError(e, 'La suppression du cours a échoué. Réessayez.'))
     }
   }
 
@@ -196,7 +187,7 @@ export default function AdminCourses() {
       setCreateOpen(false)
       await loadCourses()
     } catch (e) {
-      setModalError(formatApiError(e.data) || e?.message || 'Création impossible.')
+      setModalError(getReadableFormError(e, 'Création impossible. Vérifiez les champs et réessayez.'))
     } finally {
       setCreating(false)
     }
@@ -247,7 +238,7 @@ export default function AdminCourses() {
       await loadCourses()
       setEditingCourse(null)
     } catch (e) {
-      setModalError(formatApiError(e.data) || e?.message || 'Modification impossible.')
+      setModalError(getReadableFormError(e, 'La modification du cours a échoué. Vérifiez les champs et réessayez.'))
     } finally {
       setSavingEdit(false)
     }
@@ -421,7 +412,9 @@ export default function AdminCourses() {
                   type="button"
                   className="btn btn--secondary"
                   disabled={coursePage <= 1}
-                  onClick={() => setCoursePage((p) => Math.max(1, p - 1))}
+                  onClick={() =>
+                    setCoursePageRequested((p) => Math.max(1, Math.min(p, coursePageCount) - 1))
+                  }
                 >
                   Précédent
                 </button>
@@ -432,7 +425,11 @@ export default function AdminCourses() {
                   type="button"
                   className="btn btn--secondary"
                   disabled={coursePage >= coursePageCount}
-                  onClick={() => setCoursePage((p) => Math.min(coursePageCount, p + 1))}
+                  onClick={() =>
+                    setCoursePageRequested((p) =>
+                      Math.min(coursePageCount, Math.min(p, coursePageCount) + 1),
+                    )
+                  }
                 >
                   Suivant
                 </button>

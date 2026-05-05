@@ -12,6 +12,9 @@ function normalizeRoleName(name) {
     .trim()
 }
 
+/** Rôles élève / apprenant uniquement (aligné backend REGISTERABLE_SIGNUP_ROLES). */
+const SIGNUP_ROLES_NORMALIZED = new Set(['utilisateur', 'eleve', 'etudiant'])
+
 export default function Register() {
   const navigate = useNavigate()
   const { register, user, loading: authLoading } = useAuth()
@@ -35,7 +38,7 @@ export default function Register() {
     else if (!/[^A-Za-z0-9]/.test(password)) {
       nextErrors.password = 'Le mot de passe doit contenir au moins un caractère spécial.'
     }
-    if (!roleId) nextErrors.roleId = 'Choisissez un profil dans la liste.'
+    if (!roleId) nextErrors.roleId = 'Choisissez un rôle dans la liste.'
     setFieldErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -45,18 +48,18 @@ export default function Register() {
     listRoles()
       .then((rows) => {
         if (cancelled) return
-        const allowed = (Array.isArray(rows) ? rows : []).filter((r) => {
-          const n = normalizeRoleName(r.role_name)
-          return n === 'utilisateur' || n === 'formateur'
-        })
-        setRoles(allowed)
+        const allRoles = Array.isArray(rows) ? rows : []
+        const allowed = allRoles.filter((r) =>
+          SIGNUP_ROLES_NORMALIZED.has(normalizeRoleName(r.role_name)),
+        )
+        setRoles(allowed.length > 0 ? allowed : allRoles)
         setRolesLoadError(null)
       })
       .catch(() => {
         if (!cancelled) {
           setRoles([])
           setRolesLoadError(
-            'Impossible de charger les profils. Vérifiez la connexion ou réessayez.',
+            'Impossible de charger les rôles depuis le serveur. Vérifiez la connexion ou réessayez.',
           )
         }
       })
@@ -72,14 +75,14 @@ export default function Register() {
     try {
       const payload = { email: email.trim(), password, role_id: Number(roleId) }
       const me = await register(payload)
-      navigate(me.is_staff ? '/admin' : '/dashboard', { replace: true })
+      navigate(me.is_staff ? '/admin' : '/compte', { replace: true })
     } catch (ex) {
       setErr(getReadableFormError(ex, "Impossible de finaliser l'inscription. Vérifiez les champs du formulaire."))
     }
   }
 
   if (!authLoading && user) {
-    return <Navigate to={user.is_staff ? '/admin' : '/dashboard'} replace />
+    return <Navigate to={user.is_staff ? '/admin' : '/compte'} replace />
   }
 
   return (
@@ -89,12 +92,12 @@ export default function Register() {
           <p className="page-header__eyebrow">Compte</p>
           <h1>Inscription</h1>
           <p className="page-header__lead">
-            Créez votre compte en choisissant votre profil (apprenant ou formateur).
+            Inscription réservée aux comptes élèves / apprenants. Les comptes formateur sont créés par l’équipe.
           </p>
           <ul className="auth-points">
-            <li>Choix du profil à l’inscription</li>
-            <li>Mot de passe robuste (8 caractères minimum)</li>
-            <li>Accès au tableau de bord après création</li>
+            <li>Choix du profil apprenant proposé dans la liste</li>
+            <li>Mot de passe sécurisé (8+ caractères)</li>
+            <li>Accès immédiat après création du compte</li>
           </ul>
         </section>
 
@@ -132,7 +135,7 @@ export default function Register() {
               {fieldErrors.password ? <span className="field-error">{fieldErrors.password}</span> : null}
             </label>
             <label>
-              Profil
+              Rôle
               <select
                 value={roleId}
                 onChange={(e) => {
@@ -142,7 +145,7 @@ export default function Register() {
                 required
                 aria-invalid={fieldErrors.roleId ? 'true' : 'false'}
               >
-                <option value="">-- choisir un profil --</option>
+                <option value="">-- choisir un rôle --</option>
                 {roles.map((r) => (
                   <option key={r.role_id} value={r.role_id}>
                     {r.role_name}
