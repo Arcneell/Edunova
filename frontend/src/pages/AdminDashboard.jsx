@@ -1,34 +1,13 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { DashHero, DashLayout } from '../components/dash/index.js'
 import { useAuth } from '../hooks/useAuth.js'
-
-function adminLinkClass({ isActive }) {
-  return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
-}
 
 export default function AdminDashboard() {
   const { user } = useAuth()
 
   return (
     <DashLayout>
-      <nav className="admin-nav" aria-label="Navigation admin">
-        <NavLink to="/admin" end className={adminLinkClass}>
-          Dashboard
-        </NavLink>
-        {user?.is_staff ? (
-          <NavLink to="/admin/users" className={adminLinkClass}>
-            Utilisateurs
-          </NavLink>
-        ) : null}
-        <NavLink to="/admin/cours" className={adminLinkClass}>
-          Cours
-        </NavLink>
-        <NavLink to="/admin/quizz" className={adminLinkClass}>
-          Quiz
-        </NavLink>
-      </nav>
-
-      <DashHero eyebrow="Dashboard" title="Pilotage pédagogique">
+      <DashHero eyebrow="Espace équipe" title="Pilotage pédagogique">
         <p>
           Accédez rapidement aux espaces de gestion pour les cours, quiz et
           questions/réponses.

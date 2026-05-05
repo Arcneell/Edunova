@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   deleteFormateurCourse,
   getFormateurCourses,
   updateFormateurCourse,
 } from '../api/user/formateur.js'
 import { useAuth } from '../hooks/useAuth.js'
-
-function adminLinkClass({ isActive }) {
-  return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
-}
 
 function normalizeRoleName(name) {
   return String(name || '')
@@ -113,23 +109,6 @@ export default function AdminCourses() {
 
   return (
     <div className="page">
-      <nav className="admin-nav" aria-label="Navigation admin">
-        <NavLink to="/admin" end className={adminLinkClass}>
-          Dashboard
-        </NavLink>
-        {user?.is_staff ? (
-          <NavLink to="/admin/users" className={adminLinkClass}>
-            Utilisateurs
-          </NavLink>
-        ) : null}
-        <NavLink to="/admin/cours" className={adminLinkClass}>
-          Cours
-        </NavLink>
-        <NavLink to="/admin/quizz" className={adminLinkClass}>
-          Quiz
-        </NavLink>
-      </nav>
-
       <header className="page-header">
         <p className="page-header__eyebrow">Administration</p>
         <h1>Gestion des cours</h1>
