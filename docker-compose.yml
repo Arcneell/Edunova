@@ -47,6 +47,8 @@ services:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # Cible du proxy Vite (/api → backend) quand le front tourne dans Compose
+      VITE_API_PROXY_TARGET: http://backend:8000
 
 volumes:
   postgres_data:
