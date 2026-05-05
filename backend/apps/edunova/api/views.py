@@ -21,8 +21,9 @@ from apps.edunova.api.serializers import (
     ProfileReadSerializer,
     ProfileUpdateSerializer,
     RegisterSerializer,
+    RoleBriefSerializer,
 )
-from apps.edunova.models import User
+from apps.edunova.models import Role, User
 
 
 class RegisterThrottle(ScopedRateThrottle):
@@ -106,6 +107,14 @@ class MeProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ProfileReadSerializer(profile).data)
+
+
+class RolesListView(generics.ListAPIView):
+    """Liste des rôles (inscription, scripts de test)."""
+
+    permission_classes = [AllowAny]
+    queryset = Role.objects.all().order_by('role_name')
+    serializer_class = RoleBriefSerializer
 
 
 class AdminUserPagination(PageNumberPagination):
