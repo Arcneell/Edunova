@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
 
 from apps.api.users.permissions import is_learner_role
-from apps.edunova.models import Course, CourseEnrollment, Quiz, Rank, UserBadge, UserCourseProgress
+from apps.edunova.models import ActivityLog, Course, CourseEnrollment, Quiz, Rank, UserBadge, UserCourseProgress
 from .serializers import QuizPlaySerializer
 
 
@@ -106,6 +106,17 @@ class QuizSubmitView(APIView):
                         badge=course.delivered_badge,
                     )
 
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.QUIZ_SUBMIT,
+            metadata={
+                'quiz_id': quiz_id,
+                'score': score,
+                'passed': passed,
+                'xp_earned': xp_earned if passed else 0,
+                'coins_earned': coins_earned,
+            },
+        )
         return Response({
             'score': score,
             'passed': passed,

@@ -21,7 +21,7 @@ from apps.api.users.serializers import (
     RegisterSerializer,
     RoleBriefSerializer,
 )
-from apps.edunova.models import Role, User
+from apps.edunova.models import ActivityLog, Role, User
 
 
 class RegisterThrottle(ScopedRateThrottle):
@@ -51,6 +51,11 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         login(request, user)
+        ActivityLog.objects.create(
+            user=user,
+            action=ActivityLog.Action.REGISTER,
+            metadata={'email': user.email},
+        )
         return Response(MeSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
@@ -63,6 +68,11 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         login(request, user)
+        ActivityLog.objects.create(
+            user=user,
+            action=ActivityLog.Action.LOGIN,
+            metadata={},
+        )
         return Response(MeSerializer(user).data)
 
 
@@ -70,6 +80,11 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        ActivityLog.objects.create(
+            user=request.user,
+            action=ActivityLog.Action.LOGOUT,
+            metadata={},
+        )
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
