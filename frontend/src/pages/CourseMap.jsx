@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import CourseMapBoardSvg from '../components/CourseMapBoardSvg.jsx'
@@ -30,8 +30,41 @@ export default function CourseMap() {
   const [courseDetail, setCourseDetail] = useState(null)
   const [loadingCourse, setLoadingCourse] = useState(false)
   const [courseRead, setCourseRead] = useState(false)
+  const [quizResult, setQuizResult] = useState(null)
+  const [toasts, setToasts] = useState([])
+  const toastIdRef = useRef(0)
+  const toastTimersRef = useRef(new Map())
 
-  async function loadMap(themeId) {
+  const dismissToast = useCallback((id) => {
+    setToasts((cur) => cur.filter((t) => t.id !== id))
+    const timer = toastTimersRef.current.get(id)
+    if (timer) {
+      clearTimeout(timer)
+      toastTimersRef.current.delete(id)
+    }
+  }, [])
+
+  const pushToast = useCallback(
+    (kind, text) => {
+      toastIdRef.current += 1
+      const id = toastIdRef.current
+      setToasts((cur) => [...cur, { id, kind, text }])
+      const timer = setTimeout(() => dismissToast(id), 3800)
+      toastTimersRef.current.set(id, timer)
+      return id
+    },
+    [dismissToast],
+  )
+
+  useEffect(
+    () => () => {
+      toastTimersRef.current.forEach((t) => clearTimeout(t))
+      toastTimersRef.current.clear()
+    },
+    [],
+  )
+
+  async function loadMap(themeId, { silent = false } = {}) {
     setLoadingMap(true)
     setError('')
     setResultMessage('')
@@ -44,8 +77,11 @@ export default function CourseMap() {
       const data = await getThemeMap(id)
       setMapData(data)
       setMapValidated(true)
+      if (!silent) pushToast('success', `Bienvenue dans ${data.theme_title || 'la quête'} !`)
     } catch (e) {
-      setError(getReadableFormError(e, 'Impossible de charger la carte pour cette thématique.'))
+      const msg = getReadableFormError(e, 'Impossible de charger la carte pour cette thématique.')
+      setError(msg)
+      pushToast('error', msg)
     } finally {
       setLoadingMap(false)
     }
@@ -95,11 +131,18 @@ export default function CourseMap() {
   }, [mapLayout.nodes, mapLayout.activeIndex])
 
   async function handleSelectNode(node) {
-    if (node.checkpoint.status === 'locked') return
+    if (node.checkpoint.status === 'locked') {
+      pushToast('info', `Verrouillé · termine d'abord « ${mapNodes[node.level - 2]?.checkpoint.title || 'le checkpoint précédent'} »`)
+      return
+    }
+    if (node.checkpoint.status === 'completed') {
+      pushToast('success', `Lv ${node.level} déjà validé · score ${node.checkpoint.best_score ?? 0}%`)
+    }
     setActiveQuiz(null)
     setAnswers({})
     setCourseRead(false)
     setCourseDetail(null)
+    setQuizResult(null)
     setSelectedNode(node)
     setLoadingCourse(true)
     setError('')
@@ -107,7 +150,9 @@ export default function CourseMap() {
       const detail = await getCourseDetail(node.checkpoint.course_id)
       setCourseDetail(detail)
     } catch (e) {
-      setError(getReadableFormError(e, 'Impossible de charger ce cours pour le moment.'))
+      const msg = getReadableFormError(e, 'Impossible de charger ce cours pour le moment.')
+      setError(msg)
+      pushToast('error', msg)
     } finally {
       setLoadingCourse(false)
     }
@@ -119,31 +164,38 @@ export default function CourseMap() {
     setAnswers({})
     setCourseDetail(null)
     setCourseRead(false)
+    setQuizResult(null)
   }
 
-  async function handleOpenQuiz(checkpoint, nodeKind = 'quiz') {
+  async function handleOpenQuiz(checkpoint) {
     setResultMessage('')
     setError('')
+    setQuizResult(null)
     if (!checkpoint.quiz?.quiz_id) {
-      setError('Ce cours n’a pas encore de quiz associé.')
+      pushToast('error', 'Ce cours n’a pas encore de quiz associé.')
       return
     }
     try {
       const quiz = await getQuizPlay(checkpoint.quiz.quiz_id)
-      setSelectedNode({ kind: nodeKind, checkpoint })
-      setActiveQuiz({
-        checkpoint,
-        quiz,
-      })
+      setActiveQuiz({ checkpoint, quiz })
       setAnswers({})
+      pushToast('info', `Quiz lancé · ${quiz.questions?.length || 0} questions`)
     } catch (e) {
-      setError(getReadableFormError(e, 'Impossible de charger ce quiz pour le moment.'))
+      const msg = getReadableFormError(e, 'Impossible de charger ce quiz pour le moment.')
+      setError(msg)
+      pushToast('error', msg)
     }
   }
 
   async function handleSubmitQuiz(event) {
     event.preventDefault()
     if (!activeQuiz) return
+    const totalQuestions = activeQuiz.quiz.questions?.length || 0
+    const answered = Object.values(answers).filter(Boolean).length
+    if (answered < totalQuestions) {
+      pushToast('error', `Réponds aux ${totalQuestions} questions avant de valider (${answered}/${totalQuestions}).`)
+      return
+    }
     setSubmitting(true)
     setError('')
     setResultMessage('')
@@ -154,19 +206,31 @@ export default function CourseMap() {
           .map(([questionId, answerId]) => [questionId, Number(answerId)]),
       )
       const result = await submitQuiz(activeQuiz.quiz.quiz_id, payload)
-      setResultMessage(
-        result.passed
-          ? `Bravo ! Score ${result.score}% — checkpoint validé.`
-          : `Score ${result.score}% — essaie encore pour débloquer la suite.`,
-      )
+      setQuizResult(result)
       setActiveQuiz(null)
       setAnswers({})
-      await loadMap(Number(selectedThemeId))
+      if (result.passed) {
+        pushToast('success', `Lv validé · +${result.xp_earned} XP`)
+        if (result.rank_up && result.rank?.label) {
+          pushToast('success', `Nouveau rang · ${result.rank.label} ⭐`)
+        }
+      } else {
+        pushToast('error', `Score ${result.score}% — encore un effort !`)
+      }
+      await loadMap(Number(selectedThemeId), { silent: true })
     } catch (e) {
-      setError(getReadableFormError(e, "L'envoi des réponses a échoué. Réessayez."))
+      const msg = getReadableFormError(e, "L'envoi des réponses a échoué. Réessayez.")
+      setError(msg)
+      pushToast('error', msg)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  async function handleRetryQuiz() {
+    if (!selectedNode?.checkpoint?.quiz?.quiz_id) return
+    setQuizResult(null)
+    await handleOpenQuiz(selectedNode.checkpoint)
   }
 
   function handleValidateMap(event) {
@@ -329,7 +393,7 @@ export default function CourseMap() {
                       data-biome={node.biome.id}
                       style={node.style}
                       onClick={() => handleSelectNode(node)}
-                      disabled={checkpoint.status === 'locked'}
+                      aria-disabled={checkpoint.status === 'locked'}
                       aria-label={`Niveau ${node.level} — ${checkpoint.title} — ${label}`}
                       title={`Lv ${node.level} · ${checkpoint.title}`}
                     >
@@ -389,14 +453,30 @@ export default function CourseMap() {
               <section className="course-map-modal card" onClick={(event) => event.stopPropagation()}>
             <div className="course-map-modal__head">
               <h2 className="section-title">
-                {activeQuiz ? 'Quiz' : 'Cours'} · Lv {selectedNode.level} — {selectedNode.checkpoint.title}
+                {quizResult
+                  ? quizResult.passed
+                    ? 'Quête validée !'
+                    : 'Quête à recommencer'
+                  : activeQuiz
+                    ? 'Quiz'
+                    : 'Cours'}{' '}
+                · Lv {selectedNode.level} — {selectedNode.checkpoint.title}
               </h2>
               <button type="button" className="btn btn--secondary" onClick={handleCloseNode}>
                 Fermer
               </button>
             </div>
 
-            {!activeQuiz ? (
+            {quizResult ? (
+              <QuizResultScreen
+                result={quizResult}
+                minScore={selectedNode.checkpoint.quiz?.min_score_to_pass ?? 0}
+                onClose={handleCloseNode}
+                onRetry={handleRetryQuiz}
+              />
+            ) : null}
+
+            {!quizResult && !activeQuiz ? (
               <div className="stack-form">
                 {loadingCourse ? (
                   <p className="muted">Chargement du cours…</p>
@@ -441,7 +521,7 @@ export default function CourseMap() {
               </div>
             ) : null}
 
-            {activeQuiz ? (
+            {!quizResult && activeQuiz ? (
               <form className="stack-form course-quiz" onSubmit={handleSubmitQuiz}>
                 {activeQuiz.quiz.questions.map((question, index) => (
                   <fieldset key={question.question_id} className="quiz-question">
@@ -505,6 +585,117 @@ export default function CourseMap() {
           </Link>
         </div>
       ) : null}
+
+      {createPortal(
+        <div className="toast-stack" aria-live="polite" aria-atomic="false">
+          {toasts.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`toast toast--${t.kind}`}
+              onClick={() => dismissToast(t.id)}
+            >
+              <span className="toast__icon" aria-hidden="true">
+                {t.kind === 'success' ? '✓' : t.kind === 'error' ? '!' : 'i'}
+              </span>
+              <span className="toast__text">{t.text}</span>
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
+    </div>
+  )
+}
+
+function useCountUp(target, duration = 700, trigger) {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    if (target == null) return undefined
+    const start = performance.now()
+    let raf = 0
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setValue(Math.round(target * eased))
+      if (t < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, duration, trigger])
+  return value
+}
+
+function QuizResultScreen({ result, minScore, onClose, onRetry }) {
+  const animatedScore = useCountUp(result.score ?? 0, 800, result)
+  const animatedXp = useCountUp(result.xp_earned ?? 0, 900, result)
+  const animatedCoins = useCountUp(result.coins_earned ?? 0, 900, result)
+
+  return (
+    <div className={`quiz-result quiz-result--${result.passed ? 'pass' : 'fail'}`}>
+      <div className="quiz-result__hero">
+        <div className="quiz-result__score-ring" aria-hidden="true">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="44" className="quiz-result__ring-bg" />
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              className="quiz-result__ring-fill"
+              style={{
+                strokeDasharray: `${(animatedScore / 100) * (2 * Math.PI * 44)} ${2 * Math.PI * 44}`,
+              }}
+            />
+          </svg>
+          <div className="quiz-result__score-value">
+            <strong>{animatedScore}</strong>
+            <span>%</span>
+          </div>
+        </div>
+        <div className="quiz-result__hero-text">
+          <p className="quiz-result__eyebrow">
+            {result.passed ? 'Checkpoint validé' : 'Score insuffisant'}
+          </p>
+          <p className="quiz-result__sub">
+            {result.passed
+              ? `Tu as franchi le seuil de ${minScore}% — la suite du parcours est ouverte.`
+              : `Il faut au moins ${minScore}% pour valider. Réessaie quand tu es prêt.`}
+          </p>
+        </div>
+      </div>
+
+      {result.passed ? (
+        <div className="quiz-result__rewards">
+          <div className="quiz-result__reward quiz-result__reward--xp">
+            <span className="quiz-result__reward-label">XP gagnée</span>
+            <span className="quiz-result__reward-value">+{animatedXp}</span>
+            <span className="quiz-result__sparkle" aria-hidden="true" />
+          </div>
+          {result.coins_earned > 0 ? (
+            <div className="quiz-result__reward quiz-result__reward--coins">
+              <span className="quiz-result__reward-label">Pièces</span>
+              <span className="quiz-result__reward-value">+{animatedCoins}</span>
+            </div>
+          ) : null}
+          {result.rank_up && result.rank?.label ? (
+            <div className="quiz-result__reward quiz-result__reward--rank">
+              <span className="quiz-result__reward-label">Nouveau rang</span>
+              <span className="quiz-result__reward-value">{result.rank.label}</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="hero-actions">
+        {!result.passed ? (
+          <button type="button" className="btn btn--secondary" onClick={onRetry}>
+            Réessayer
+          </button>
+        ) : null}
+        <button type="button" className="btn btn--primary" onClick={onClose}>
+          {result.passed ? 'Continuer la quête' : 'Fermer'}
+        </button>
+      </div>
     </div>
   )
 }
