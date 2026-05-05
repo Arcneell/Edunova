@@ -11,18 +11,17 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.edunova.api.permissions import IsStaffUser
-from apps.edunova.api.serializers import (
+from apps.api.users.permissions import IsStaffUser
+from apps.api.users.serializers import (
     AdminUserDetailSerializer,
     AdminUserListSerializer,
     LoginSerializer,
     MeSerializer,
     MeUpdateSerializer,
-    ProfileReadSerializer,
-    ProfileUpdateSerializer,
     RegisterSerializer,
+    RoleBriefSerializer,
 )
-from apps.edunova.models import User
+from apps.edunova.models import Role, User
 
 
 class RegisterThrottle(ScopedRateThrottle):
@@ -106,6 +105,14 @@ class MeProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ProfileReadSerializer(profile).data)
+
+
+class RolesListView(generics.ListAPIView):
+    """Liste des rôles (inscription, scripts de test)."""
+
+    permission_classes = [AllowAny]
+    queryset = Role.objects.all().order_by('role_name')
+    serializer_class = RoleBriefSerializer
 
 
 class AdminUserPagination(PageNumberPagination):

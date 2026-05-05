@@ -119,6 +119,15 @@ class Quiz(models.Model):
         help_text=_('Pourcentage entier entre 0 et 100.'),
         db_column='min_score_to_pass',
     )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_quizzes',
+        verbose_name=_('créé par'),
+        db_column='created_by_id',
+    )
 
     class Meta:
         db_table = 'quiz'
@@ -150,6 +159,15 @@ class User(AbstractUser):
         related_name='users',
         verbose_name=_('rôle'),
         db_column='role_id',
+    )
+    formateur = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='apprenants',
+        verbose_name=_('formateur référent'),
+        db_column='formateur_id',
     )
 
     cosmetics_purchased = models.ManyToManyField(
@@ -314,7 +332,9 @@ class Course(models.Model):
         related_name='course_delivery',
         verbose_name=_('badge délivré'),
         db_column='delivered_badge_id',
-        help_text=_('Relation MCD : DELIVRER (un cours → un badge ; un badge → au plus un cours).'),
+        null=True,
+        blank=True,
+        help_text=_('Relation MCD : DELIVRER (un cours → un badge ; un badge → au plus un cours).'),
     )
     course_title = models.CharField(_('titre'), max_length=255, db_column='course_title')
     body_content = models.TextField(_('contenu'), db_column='body_content')
@@ -322,6 +342,15 @@ class Course(models.Model):
         _('ordre sur la carte'),
         default=0,
         db_column='map_order',
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_courses',
+        verbose_name=_('créé par'),
+        db_column='created_by_id',
     )
 
     class Meta:
@@ -422,3 +451,114 @@ class CourseEnrollment(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user_id} → {self.course_id}'
+
+
+class UserCourseProgress(models.Model):
+    progress_id = models.BigAutoField(primary_key=True, db_column='progress_id')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='course_progress',
+        db_column='user_id',
+    )
+    course = models.ForeignKey(
+        'edunova.Course',
+        on_delete=models.CASCADE,
+        related_name='user_progress',
+        db_column='course_id',
+    )
+    is_unlocked = models.BooleanField(_('débloqué'), default=False, db_column='is_unlocked')
+    is_completed = models.BooleanField(_('complété'), default=False, db_column='is_completed')
+    best_score = models.PositiveSmallIntegerField(
+        _('meilleur score'),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        db_column='best_score',
+    )
+    unlocked_at = models.DateTimeField(_('débloqué le'), null=True, blank=True)
+    completed_at = models.DateTimeField(_('complété le'), null=True, blank=True)
+    updated_at = models.DateTimeField(_('mis à jour le'), auto_now=True)
+
+    class Meta:
+        db_table = 'user_course_progress'
+        verbose_name = _('progression cours utilisateur')
+        verbose_name_plural = _('progressions cours utilisateur')
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course'], name='uniq_user_course_progress'),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.user_id} ↔ {self.course_id}'
+
+
+class ActivityLog(models.Model):
+    """Trace des actions métier significatives."""
+
+    class Action(models.TextChoices):
+        # Élève — authentification
+        REGISTER          = 'register',           _('inscription')
+        LOGIN             = 'login',              _('connexion')
+        LOGOUT            = 'logout',             _('déconnexion')
+        # Élève — parcours
+        QUIZ_SUBMIT       = 'quiz_submit',        _('soumission quiz')
+        COURSE_ENROLL     = 'course_enroll',      _('inscription cours')
+        COURSE_UNENROLL   = 'course_unenroll',    _('désinscription cours')
+        COSMETIC_PURCHASE = 'cosmetic_purchase',  _('achat cosmétique')
+        # Formateur — cours
+        COURSE_CREATE     = 'course_create',      _('création cours')
+        COURSE_UPDATE     = 'course_update',      _('modification cours')
+        COURSE_DELETE     = 'course_delete',      _('suppression cours')
+        # Formateur — quiz
+        QUIZ_CREATE       = 'quiz_create',        _('création quiz')
+        QUIZ_UPDATE       = 'quiz_update',        _('modification quiz')
+        QUIZ_DELETE       = 'quiz_delete',        _('suppression quiz')
+        # Formateur — questions / réponses
+        QUESTION_CREATE   = 'question_create',    _('création question')
+        QUESTION_UPDATE   = 'question_update',    _('modification question')
+        QUESTION_DELETE   = 'question_delete',    _('suppression question')
+        ANSWER_CREATE     = 'answer_create',      _('création réponse')
+        ANSWER_UPDATE     = 'answer_update',      _('modification réponse')
+        ANSWER_DELETE     = 'answer_delete',      _('suppression réponse')
+
+    log_id = models.BigAutoField(_('identifiant log'), primary_key=True, db_column='log_id')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activity_logs',
+        verbose_name=_('utilisateur'),
+        db_column='user_id',
+    )
+    action = models.CharField(
+        _('action'),
+        max_length=40,
+        choices=Action.choices,
+        db_column='action',
+    )
+    metadata = models.JSONField(
+        _('métadonnées'),
+        default=dict,
+        blank=True,
+        help_text=_('Contexte libre : score, ids liés, résultat, etc.'),
+    )
+    ip_address = models.GenericIPAddressField(
+        _('adresse IP'),
+        null=True,
+        blank=True,
+        db_column='ip_address',
+    )
+    created_at = models.DateTimeField(_('créé le'), auto_now_add=True)
+
+    class Meta:
+        db_table = 'activity_log'
+        verbose_name = _("log d'activité")
+        verbose_name_plural = _("logs d'activité")
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='idx_log_user_date'),
+            models.Index(fields=['action'], name='idx_log_action'),
+        ]
+
+    def __str__(self) -> str:
+        return f'[{self.action}] user={self.user_id} @ {self.created_at}'
