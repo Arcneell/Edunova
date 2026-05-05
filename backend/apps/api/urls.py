@@ -1,11 +1,18 @@
-from django.urls import path, include
+"""Toutes les routes HTTP REST sous le préfixe ``/api/``."""
+
+from django.urls import include, path
 
 urlpatterns = [
-    path('', include('apps.api.course.urls')),
+    path('health/', include('apps.api.health.urls')),
+    path('', include('apps.api.users.urls')),
+    path('profiles/', include('apps.api.profiles.urls')),
+    path('roles/', include('apps.api.roles.urls')),
+    path('themes/', include('apps.api.themes.urls')),
+    path('courses/', include('apps.api.course.urls')),
+    path('ranks/', include('apps.api.ranks.urls')),
+    path('badges/', include('apps.api.badges.urls')),
+    path('cosmetics/', include('apps.api.cosmetic.urls')),
     path('quizzes/', include('apps.api.quiz.urls')),
     path('quizzes/<int:quiz_id>/questions/', include('apps.api.question.urls')),
-    path(
-        'quizzes/<int:quiz_id>/questions/<int:question_id>/answers/',
-        include('apps.api.answer.urls'),
-    ),
+    path('formateur/', include('apps.api.formateur.urls')),
 ]

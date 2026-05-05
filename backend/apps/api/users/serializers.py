@@ -4,7 +4,9 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from apps.edunova.models import Profile, Rank, Role, User
+from apps.api.profiles.serializers import ProfileReadSerializer
+from apps.api.users.permissions import RESTRICTED_ROLES
+from apps.edunova.models import Role, User
 
 
 class RoleBriefSerializer(serializers.ModelSerializer):
@@ -34,33 +36,6 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         return value.lower()
 
 
-class RankBriefSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rank
-        fields = ('rank_id', 'label')
-
-
-class ProfileReadSerializer(serializers.ModelSerializer):
-    rank = RankBriefSerializer(read_only=True)
-
-    class Meta:
-        model = Profile
-        fields = (
-            'total_xp',
-            'wallet_balance',
-            'current_avatar_url',
-            'current_banner_url',
-            'current_streak',
-            'rank',
-        )
-
-
-class ProfileUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ('current_avatar_url', 'current_banner_url')
-
-
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
@@ -75,6 +50,14 @@ class RegisterSerializer(serializers.Serializer):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('Cette adresse e-mail est déjà enregistrée.')
         return value.lower()
+
+    def validate(self, attrs: dict) -> dict:
+        role = attrs.get('role')
+        if role and role.role_name.strip().lower() in RESTRICTED_ROLES:
+            raise serializers.ValidationError(
+                {'role_id': 'Ce rôle ne peut pas être assigné à l\'inscription.'}
+            )
+        return attrs
 
     def create(self, validated_data: dict) -> User:
         email = validated_data['email']

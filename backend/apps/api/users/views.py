@@ -11,15 +11,13 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.edunova.api.permissions import IsStaffUser
-from apps.edunova.api.serializers import (
+from apps.api.users.permissions import IsStaffUser
+from apps.api.users.serializers import (
     AdminUserDetailSerializer,
     AdminUserListSerializer,
     LoginSerializer,
     MeSerializer,
     MeUpdateSerializer,
-    ProfileReadSerializer,
-    ProfileUpdateSerializer,
     RegisterSerializer,
     RoleBriefSerializer,
 )

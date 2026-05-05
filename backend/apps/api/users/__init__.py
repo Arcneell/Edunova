@@ -1,1 +1,1 @@
-"""Routes HTTP utilisateurs, authentification session et administration staff."""
+"""API utilisateurs : auth, compte courant, profil, administration."""

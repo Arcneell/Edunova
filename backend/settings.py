@@ -48,6 +48,10 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'edunova.User'
 
+AUTHENTICATION_BACKENDS = [
+    'apps.api.users.backends.RoleAwareBackend',
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -81,9 +85,9 @@ WSGI_APPLICATION = 'wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'edunova'),
-        'USER': os.environ.get('POSTGRES_USER', 'edunova'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'edunova'),
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
         'HOST': os.environ.get('POSTGRES_HOST', 'db'),
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     },

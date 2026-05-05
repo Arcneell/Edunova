@@ -1,8 +1,9 @@
 from django.urls import path
 
-from .views import ThemeListView, ThemeMapView
+from .views import CourseDetailView, CourseEnrollView, CourseListView
 
 urlpatterns = [
-    path('themes/', ThemeListView.as_view(), name='theme-list'),
-    path('themes/<int:theme_id>/map/', ThemeMapView.as_view(), name='theme-map'),
+    path('', CourseListView.as_view(), name='course-list'),
+    path('<int:course_id>/', CourseDetailView.as_view(), name='course-detail'),
+    path('<int:course_id>/enroll/', CourseEnrollView.as_view(), name='course-enroll'),
 ]
