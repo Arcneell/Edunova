@@ -1,6 +1,4 @@
-# Les migrations Django s’exécutent au DÉMARRAGE du service « backend » (voir docker-entrypoint.sh),
-# pas pendant « docker build » : la base Postgres n’est pas disponible lors de la construction d’image.
-# Sur un volume Postgres neuf ou une base vide, « migrate » applique toutes les migrations (dont la 0001).
+# Migrations Django au démarrage du service « backend », pas pendant docker build (cf. docker-entrypoint.sh).
 
 services:
   db:
@@ -33,6 +31,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edunova}
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy

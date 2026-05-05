@@ -1,9 +1,4 @@
-"""
-Modèles du domaine Edunova (MCD).
-
-Tout le schéma est regroupé dans ce fichier par choix de projet.
-Les commentaires de section reprennent les regroupements métier.
-"""
+"""Modèles Edunova (MCD). Un seul fichier pour tout le schéma applicatif."""
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
@@ -11,13 +6,11 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# -----------------------------------------------------------------------------
-# Identité et progression (ROLE, USER, PROFILE, RANK)
-# -----------------------------------------------------------------------------
+# Identité · rôles, rangs, utilisateur, profil
 
 
 class Role(models.Model):
-    """Rôle applicatif : agrège les droits (JSON côté serveur uniquement)."""
+    """Droits d’accès agrégés (JSON interprété côté serveur)."""
 
     role_id = models.BigAutoField(_('identifiant rôle'), primary_key=True, db_column='role_id')
     role_name = models.CharField(_('nom du rôle'), max_length=150, unique=True, db_column='role_name')
@@ -38,7 +31,7 @@ class Role(models.Model):
 
 
 class Rank(models.Model):
-    """Rang lié au profil (seuil d’XP)."""
+    """Rang défini par un seuil d’XP."""
 
     rank_id = models.BigAutoField(_('identifiant rang'), primary_key=True, db_column='rank_id')
     label = models.CharField(_('libellé'), max_length=150)
@@ -60,14 +53,10 @@ class Rank(models.Model):
         return f'{self.label} ({self.xp_threshold} XP)'
 
 
-# -----------------------------------------------------------------------------
-# Récompenses et boutique (BADGE, COSMETIC)
-# -----------------------------------------------------------------------------
+# Gamification · badges, cosmétiques
 
 
 class Badge(models.Model):
-    """Badge obtenable (cours, succès, etc.)."""
-
     badge_id = models.BigAutoField(_('identifiant badge'), primary_key=True, db_column='badge_id')
     badge_name = models.CharField(_('nom'), max_length=200, db_column='badge_name')
     icon_url = models.URLField(_('URL de l’icône'), max_length=500, db_column='icon_url')
@@ -83,8 +72,6 @@ class Badge(models.Model):
 
 
 class Cosmetic(models.Model):
-    """Élément vendu ou affiché (avatar, bannière, etc.)."""
-
     cosmetic_id = models.BigAutoField(_('identifiant cosmétique'), primary_key=True, db_column='cosmetic_id')
     cosmetic_name = models.CharField(_('nom'), max_length=200, db_column='cosmetic_name')
     cosmetic_category = models.CharField(
@@ -106,14 +93,10 @@ class Cosmetic(models.Model):
         return self.cosmetic_name
 
 
-# -----------------------------------------------------------------------------
-# Parcours pédagogique (THEME, QUIZ, QUESTION, ANSWER, COURSE)
-# -----------------------------------------------------------------------------
+# Pédagogie · thème, quiz, cours, questions, réponses
 
 
 class Theme(models.Model):
-    """Thème regroupant plusieurs cours."""
-
     theme_id = models.BigAutoField(_('identifiant thème'), primary_key=True, db_column='theme_id')
     theme_title = models.CharField(_('titre'), max_length=255, db_column='theme_title')
 
@@ -128,8 +111,6 @@ class Theme(models.Model):
 
 
 class Quiz(models.Model):
-    """Évaluation rattachée à un ou plusieurs cours (relation VALIDER côté MCD)."""
-
     quiz_id = models.BigAutoField(_('identifiant quiz'), primary_key=True, db_column='quiz_id')
     coins_on_success = models.PositiveIntegerField(_('pièces si réussite'), db_column='coins_on_success')
     min_score_to_pass = models.PositiveSmallIntegerField(
@@ -150,12 +131,7 @@ class Quiz(models.Model):
 
 
 class User(AbstractUser):
-    """
-    Compte authentifié (MCD USER).
-
-    Le mot de passe est toujours géré par le hacheur Django (champ ``password``).
-    Ne jamais enregistrer de mot de passe en clair.
-    """
+    """Compte métier · mot de passe toujours haché via Django."""
 
     user_id = models.BigAutoField(primary_key=True, db_column='user_id')
 
@@ -207,13 +183,13 @@ class User(AbstractUser):
         return self.email
 
     def save(self, *args, **kwargs):
-        # Connexion admin Django : USERNAME_FIELD = email, mais AbstractUser exige ``username`` unique.
+        # Admin Django : champ ``username`` rendu cohérent avec l’email (USERNAME_FIELD).
         self.username = self.email
         super().save(*args, **kwargs)
 
 
 class Profile(models.Model):
-    """Données de jeu / progression (MCD PROFILE, 1–1 avec User)."""
+    """Progression détaillée (1 utilisateur ↔ 1 profil)."""
 
     profile_id = models.BigAutoField(_('identifiant profil'), primary_key=True, db_column='profile_id')
     user = models.OneToOneField(
@@ -264,7 +240,6 @@ class Profile(models.Model):
 
 
 class Question(models.Model):
-    """Question d’un quiz."""
 
     question_id = models.BigAutoField(_('identifiant question'), primary_key=True, db_column='question_id')
     quiz = models.ForeignKey(
@@ -293,7 +268,6 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
-    """Réponse possible à une question."""
 
     answer_id = models.BigAutoField(_('identifiant réponse'), primary_key=True, db_column='answer_id')
     question = models.ForeignKey(
@@ -317,7 +291,6 @@ class Answer(models.Model):
 
 
 class Course(models.Model):
-    """Cours rattaché à un thème, un quiz de validation et un badge délivré (MCD)."""
 
     course_id = models.BigAutoField(_('identifiant cours'), primary_key=True, db_column='course_id')
     theme = models.ForeignKey(
@@ -361,13 +334,10 @@ class Course(models.Model):
         return self.course_title
 
 
-# -----------------------------------------------------------------------------
-# Tables de liaison N–N (MCD ACHETER, GAGNER, SUIVRE)
-# -----------------------------------------------------------------------------
+# Liaisons N‑N · achats cosmétiques, badges gagnés, inscriptions cours
 
 
 class UserCosmeticPurchase(models.Model):
-    """Liaison ACHETER entre utilisateur et cosmétique."""
 
     purchase_id = models.BigAutoField(primary_key=True, db_column='purchase_id')
     user = models.ForeignKey(
@@ -397,7 +367,6 @@ class UserCosmeticPurchase(models.Model):
 
 
 class UserBadge(models.Model):
-    """Liaison GAGNER entre utilisateur et badge."""
 
     user_badge_id = models.BigAutoField(primary_key=True, db_column='user_badge_id')
     user = models.ForeignKey(
@@ -427,7 +396,6 @@ class UserBadge(models.Model):
 
 
 class CourseEnrollment(models.Model):
-    """Liaison SUIVRE entre utilisateur et cours suivi."""
 
     enrollment_id = models.BigAutoField(primary_key=True, db_column='enrollment_id')
     user = models.ForeignKey(

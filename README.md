@@ -19,23 +19,54 @@
 | Base | PostgreSQL (service `db` dans Docker Compose) |
 | Conteneurisation | Docker + Docker Compose |
 
-Le schéma métier est défini dans **`apps.edunova`** (modèles MCD) ; la **migration initiale** est appliquée sur PostgreSQL au démarrage du backend Docker (`docker-entrypoint.sh` → `migrate`). DRF est déclaré dans `INSTALLED_APPS` pour préparer les **routes API** à venir.
+Modèle de données : fichier unique **`backend/apps/edunova/models.py`**. Django REST Framework est prêt dans `INSTALLED_APPS`.
+
+**Configuration** : copier `.env.example` vers `.env`, puis remplir les variables nécessaires. En production : **`DEBUG=False`**, **`SECRET_KEY`** forte, listes **`ALLOWED_HOSTS`** et **`CSRF_TRUSTED_ORIGINS`** explicites.
+
+### SECRET_KEY (obligatoire)
+
+Elle doit figurer dans **`.env`** à la racine du dépôt (injecté dans le backend via `env_file` dans Compose). **`settings.py`** charge aussi **`backend/.env`** si présent (`django-dotenv`). **Aucune clef n’est codée dans le projet.**
+
+Sans Python installé **localement**, générez-la **dans l’image backend** ; `--no-deps` évite de démarrer Postgres pour cette étape :
+
+```bash
+docker compose run --rm --no-deps --entrypoint python backend -c "import secrets; print(secrets.token_urlsafe(50))"
+```
+
+Copiez la ligne affichée dans **`.env`** :
+
+```env
+SECRET_KEY=collez_la_valeur_sans_espace_ni_guillemets
+```
+
+Puis relancez le backend :
+
+```bash
+docker compose up -d --build backend
+```
+
+**Équivalent** via l’outil Django (même conteneur) :
+
+```bash
+docker compose run --rm --no-deps --entrypoint python backend -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
 
 ---
 
-## 🐳 Docker
 
-Depuis la racine du dépôt :
+## 🐳 Docker
 
 ```bash
 docker compose up --build
 ```
 
-- **API / admin Django** : `http://localhost:8000` (dont `/admin/`)
-- **Frontend Vite** : `http://localhost:5173`
-- **PostgreSQL** : port `5432` (voir `.env.example`)
+| Service   | URL / port typique |
+|----------|--------------------|
+| Backend  | `http://localhost:8000` |
+| Frontend | `http://localhost:5173` |
+| Postgres | port `5432` |
 
-Les migrations **ne s’exécutent pas pendant `docker build`** : au premier `compose up`, le backend attend une base joignable puis lance **`migrate`** (volume Postgres neuf ⇒ base vide ⇒ toutes les migrations, dont la `0001`, sont appliquées). Réessais automatiques sont prévus après `pg_isready` au cas où la connexion Django mettrait une seconde de plus à être disponible.
+Au démarrage du backend : attente Postgres puis **`migrate --noinput`** (bases vides ⇒ toutes les migrations appliquées). Pas de migration pendant **`docker build`**.
 
 Commandes utiles dans le conteneur :
 
@@ -43,6 +74,12 @@ Commandes utiles dans le conteneur :
 docker compose exec backend python manage.py migrate
 docker compose exec backend python manage.py createsuperuser
 ```
+
+## Si « rien n’avance » au démarrage
+
+- **Premier lancement** : `npm ci` peut prendre 1–3 minutes (téléchargement des paquets) ; les suivants sont courts grâce au volume `frontend_node_modules` et au cache de lock.
+- **Backend** : plus d’`apt-get` dans l’image ; si l’attente Postgres dépasse **2 minutes**, un message d’erreur explicite s’affiche (vérifier que le service `db` est `healthy`).
+- Pour forcer une réinstallation npm : `docker volume rm edunova_frontend_node_modules` (adapter le nom avec `docker volume ls`).
 
 ---
 
