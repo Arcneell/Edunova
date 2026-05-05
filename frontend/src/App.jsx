@@ -4,6 +4,7 @@ import AppShell from './components/AppShell.jsx'
 import { RequireAuth } from './components/RequireAuth.jsx'
 import { RequireAdminOrTrainer, RequireStaff } from './components/RequireStaff.jsx'
 import Home from './pages/Home.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Compte from './pages/Compte.jsx'
@@ -18,6 +19,14 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={<Home />} />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route

@@ -22,7 +22,7 @@ export default function Compte() {
             <dd>{user.email}</dd>
             <dt>Rôle</dt>
             <dd>{user.role?.role_name ?? '—'}</dd>
-            <dt>Équipe staff</dt>
+            <dt>Membre de l&apos;équipe Edunova</dt>
             <dd>{user.is_staff ? 'Oui' : 'Non'}</dd>
           </dl>
         ) : null}
@@ -32,7 +32,7 @@ export default function Compte() {
         {user?.is_staff ? (
           <div className="hero-actions account-actions">
             <Link to="/admin" className="btn btn--primary">
-              Ouvrir l’administration
+              Ouvrir l’espace équipe
             </Link>
           </div>
         ) : null}
