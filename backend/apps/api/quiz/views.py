@@ -1,11 +1,10 @@
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
 
-from apps.edunova.models import Course, CourseEnrollment, Quiz, Rank, UserBadge, UserCourseProgress
+from apps.edunova.models import Course, CourseEnrollment, Quiz, Rank, UserBadge
 from .serializers import QuizPlaySerializer
 
 
@@ -88,51 +87,11 @@ class QuizSubmitView(APIView):
                 enrolled = CourseEnrollment.objects.filter(
                     user=request.user, course=course
                 ).exists()
-                if enrolled:
+                if enrolled and course.delivered_badge:
                     UserBadge.objects.get_or_create(
                         user=request.user,
                         badge=course.delivered_badge,
                     )
-
-                progress, _ = UserCourseProgress.objects.get_or_create(
-                    user=request.user,
-                    course=course,
-                    defaults={
-                        'is_unlocked': True,
-                        'unlocked_at': timezone.now(),
-                    },
-                )
-                update_fields = []
-                if not progress.is_unlocked:
-                    progress.is_unlocked = True
-                    progress.unlocked_at = progress.unlocked_at or timezone.now()
-                    update_fields.extend(['is_unlocked', 'unlocked_at'])
-                if score > progress.best_score:
-                    progress.best_score = score
-                    update_fields.append('best_score')
-                if not progress.is_completed:
-                    progress.is_completed = True
-                    progress.completed_at = timezone.now()
-                    update_fields.extend(['is_completed', 'completed_at'])
-                if update_fields:
-                    update_fields.append('updated_at')
-                    progress.save(update_fields=update_fields)
-
-                next_course = (
-                    Course.objects
-                    .filter(theme=course.theme, map_order__gt=course.map_order)
-                    .order_by('map_order', 'course_id')
-                    .first()
-                )
-                if next_course:
-                    next_progress, _ = UserCourseProgress.objects.get_or_create(
-                        user=request.user,
-                        course=next_course,
-                    )
-                    if not next_progress.is_unlocked:
-                        next_progress.is_unlocked = True
-                        next_progress.unlocked_at = timezone.now()
-                        next_progress.save(update_fields=['is_unlocked', 'unlocked_at', 'updated_at'])
 
         return Response({
             'score': score,

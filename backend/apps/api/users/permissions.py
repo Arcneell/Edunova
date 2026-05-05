@@ -1,3 +1,5 @@
+from rest_framework.permissions import BasePermission
+
 # Noms de rôles normalisés — à aligner avec les données en base.
 ROLE_FORMATEUR = 'formateur'
 ROLE_ELEVE = 'élève'
