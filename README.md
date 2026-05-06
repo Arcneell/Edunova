@@ -1,6 +1,6 @@
-# 🎓 Edunova — Plateforme de formation interactive pour alternants
+# Edunova - Plateforme de formation interactive pour alternants
 
-> Une application web pensée pour rendre les parcours pédagogiques engageants, personnalisés et faciles à créer pour les formateurs.
+> Une application web pensee pour rendre les parcours pedagogiques engageants, personnalises et faciles a creer pour les formateurs.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-4.x-092E20?logo=django&logoColor=white)
@@ -10,133 +10,232 @@
 
 ---
 
-## 🧰 Stack technique
+## Sommaire
 
-| Couche | Technologie |
-|--------|-------------|
-| Backend | Django + Django REST Framework |
-| Frontend | React + Vite |
-| Base | PostgreSQL (service `db` dans Docker Compose) |
-| Conteneurisation | Docker + Docker Compose |
+1. Prerequis
+2. Installation
+3. Acces a l'application
+   - En tant qu'apprenant
+   - En tant que formateur
+   - En tant qu'administrateur
+4. Donnees de demonstration
+5. Stack technique
+6. Tests API
+7. Depannage
 
-Modèle de données : fichier unique **`backend/apps/edunova/models.py`**. Django REST Framework est prêt dans `INSTALLED_APPS`.
+---
 
-**Configuration** : copier `.env.example` vers `.env`, puis remplir les variables nécessaires. En production : **`DEBUG=False`**, **`SECRET_KEY`** forte, listes **`ALLOWED_HOSTS`** et **`CSRF_TRUSTED_ORIGINS`** explicites.
+## Prerequis
 
-### SECRET_KEY (obligatoire)
+- [Docker Desktop](https://docs.docker.com/get-docker/) (inclut Docker Compose)
 
-Elle doit figurer dans **`.env`** à la racine du dépôt (injecté dans le backend via `env_file` dans Compose). **`settings.py`** charge aussi **`backend/.env`** si présent (`django-dotenv`). **Aucune clef n’est codée dans le projet.**
+Aucune installation de Python, Node.js ou PostgreSQL n'est necessaire sur la machine hote.
 
-Sans Python installé **localement**, générez-la **dans l’image backend** ; `--no-deps` évite de démarrer Postgres pour cette étape :
+---
+
+## Installation
+
+### Etape 1 - Cloner le depot
+
+```bash
+git clone <url-du-depot>
+cd Edunova
+```
+
+### Etape 2 - Creer le fichier de configuration
+
+Copier le fichier d'exemple :
+
+```bash
+cp .env.example .env   # Linux / macOS
+copy .env.example .env  # Windows
+```
+
+Ouvrir `.env` et renseigner **au minimum** ces variables :
+
+```env
+# Base de donnees
+POSTGRES_DB=edunova
+POSTGRES_USER=edunova
+POSTGRES_PASSWORD=motdepassefort
+
+# Ports exposes (modifier si deja utilises sur votre machine)
+BACKEND_PORT=8000
+FRONTEND_PORT=5173
+
+# Django - a remplir a l'etape suivante
+SECRET_KEY=
+```
+
+### Etape 3 - Generer la SECRET_KEY
+
+La `SECRET_KEY` est obligatoire pour Django. Generez-la avec cette commande (pas besoin de Python installe localement) :
 
 ```bash
 docker compose run --rm --no-deps --entrypoint python backend -c "import secrets; print(secrets.token_urlsafe(50))"
 ```
 
-Copiez la ligne affichée dans **`.env`** :
+Copiez la valeur affichee dans `.env` :
 
 ```env
-SECRET_KEY=collez_la_valeur_sans_espace_ni_guillemets
+SECRET_KEY=la_valeur_generee_ici
 ```
 
-Puis relancez le backend :
-
-```bash
-docker compose up -d --build backend
-```
-
-**Équivalent** via l’outil Django (même conteneur) :
-
-```bash
-docker compose run --rm --no-deps --entrypoint python backend -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
----
-
-
-## 🐳 Docker
+### Etape 4 - Lancer l'application
 
 ```bash
 docker compose up --build
 ```
 
-| Service   | URL / port typique |
-|----------|--------------------|
-| Backend  | `http://localhost:${BACKEND_PORT}` (souvent 8000, voir `.env`) |
-| Frontend | `http://localhost:${FRONTEND_PORT}` (souvent 5173) |
-| Postgres | port défini par **`POSTGRES_PORT`** dans `.env` (ex. `5432`) |
+> Le premier lancement telecharge les images Docker et installe les dependances npm - compter **2 a 5 minutes**. Les lancements suivants sont beaucoup plus rapides.
 
-**PostgreSQL** : renseigner **`POSTGRES_DB`**, **`POSTGRES_USER`**, **`POSTGRES_PASSWORD`** et **`POSTGRES_PORT`** dans `.env` (aucune valeur par défaut dans `docker-compose.yml`).
+Une fois demarre, l'application est accessible :
 
-Au démarrage du backend : attente Postgres puis **`migrate --noinput`** (bases vides ⇒ toutes les migrations appliquées). Pas de migration pendant **`docker build`**.
+| Service | URL |
+|---------|-----|
+| Interface web (frontend) | http://localhost:5173 |
+| API (backend) | http://localhost:8000 |
 
-Commandes utiles dans le conteneur :
+---
+
+## Acces a l'application
+
+### En tant qu'apprenant
+
+1. Ouvrir **http://localhost:5173**
+2. Cliquer sur **S'inscrire** et creer un compte
+3. Se connecter avec ses identifiants
+4. Depuis le **tableau de bord** (`/dashboard`), voir sa progression et ses badges
+5. Aller sur **Mes cours** pour suivre un parcours pedagogique
+
+> Un compte cree via l'inscription est automatiquement un apprenant. Il peut suivre des cours, passer des quiz et gagner des badges.
+
+---
+
+### En tant que formateur
+
+Le formateur dispose d'un back-office pour creer et gerer les cours et les quiz.
+
+> Les identifiants de connexion sont fournis separement.
+
+#### Pages accessibles au formateur
+
+| URL | Description |
+|-----|-------------|
+| `/admin` | Tableau de bord - vue d'ensemble |
+| `/admin/cours` | Creer, modifier et supprimer des cours |
+| `/admin/quizz` | Creer et modifier les quiz lies aux cours |
+
+---
+
+### En tant qu'administrateur
+
+L'administrateur accede a toutes les pages du back-office, y compris la gestion des utilisateurs et les logs.
+
+> Les identifiants de connexion sont fournis separement.
+
+#### Pages accessibles a l'administrateur
+
+| URL | Description |
+|-----|-------------|
+| `/admin` | Tableau de bord |
+| `/admin/cours` | Tous les cours |
+| `/admin/quizz` | Tous les quiz |
+| `/admin/users` | Liste et roles de tous les utilisateurs |
+| `/admin/logs` | Historique des actions |
+
+---
+
+## Donnees de demonstration
+
+Le script `seed_demo` peuple la base avec un jeu de donnees realiste :
+
+- **1 administrateur**
+- **4 formateurs**, chacun responsable d'une thematique
+- **24 apprenants** avec des progressions variees (debutant, intermediaire, avance)
+- **4 thematiques**, **16 cours** complets avec quiz, questions et reponses
+- Badges, avatars et historique d'activite
+
+Mot de passe pour tous les comptes de demo : **`Edunova123!`**
 
 ```bash
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py createsuperuser
+# A lancer dans cet ordre
+docker compose exec backend python manage.py seed_cosmetics
+docker compose exec backend python manage.py seed_demo
+
+# Reinitialiser et recharger depuis zero
+docker compose exec backend python manage.py seed_demo --reset
 ```
 
-## Si « rien n’avance » au démarrage
+---
 
-- **Premier lancement** : `npm ci` peut prendre 1–3 minutes (téléchargement des paquets) ; les suivants sont courts grâce au volume `frontend_node_modules` et au cache de lock.
-- **Backend** : plus d’`apt-get` dans l’image ; si l’attente Postgres dépasse **2 minutes**, un message d’erreur explicite s’affiche (vérifier que le service `db` est `healthy`).
-- Pour forcer une réinstallation npm : `docker volume rm edunova_frontend_node_modules` (adapter le nom avec `docker volume ls`).
+## Stack technique
+
+| Couche | Technologie |
+|--------|-------------|
+| Backend | Django 4 + Django REST Framework |
+| Frontend | React 18 + Vite |
+| Base de donnees | PostgreSQL 17 |
+| Conteneurisation | Docker + Docker Compose |
+| IA (generation de cours) | Google Gemini (optionnel) |
+
+**Generation IA** : pour activer la creation de cours assistee par IA, renseigner `GEMINI_API_KEY` dans `.env` (cle obtenue sur [Google AI Studio](https://aistudio.google.com/apikey)). Sans cle, l'endpoint `/api/formateur/ai/*` renvoie une erreur 503 mais le reste de l'application fonctionne normalement.
+
+En production : passer `DEBUG=False`, definir une `SECRET_KEY` forte, et renseigner `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` avec vos domaines reels.
 
 ---
 
-## ⚠️ Historique de migrations
+## Tests API
 
-Si tu changes de modèle utilisateur ou de structure d’apps sur une base déjà migrée, Postgres peut signaler une **`InconsistentMigrationHistory`**. Dans ce cas, purge le volume nommé ou repars d’une base neuve (`docker compose down -v` puis `up --build`).
+Les tests verifient les endpoints les plus critiques de l'application :
 
----
+| Module | Ce qui est teste |
+|--------|-----------------|
+| `tests.auth` | Inscription, connexion, deconnexion, `/me/` |
+| `tests.courses` | Liste, detail, inscription et desinscription a un cours |
+| `tests.quiz` | Lecture (anti-triche), soumission reussie et echouee |
+| `tests.cosmetics` | Liste, achat, double achat, equipement |
 
-## ✅ Prérequis
-
-- [Docker](https://docs.docker.com/get-docker/) et Docker Compose
-
----
-
-## 🧪 Tests API
-
-Les tests vérifient les endpoints les plus critiques de l'application :
-
-| Module | Endpoints couverts |
-|---|---|
-| `tests.auth` | register, login, logout, `/me/` |
-| `tests.courses` | liste, détail, inscription / désinscription |
-| `tests.quiz` | lecture (anti-triche), soumission réussie / échouée |
-| `tests.cosmetics` | liste, achat, double achat, équipement, `is_equipped` |
-
-Chaque suite crée ses propres données de test et les supprime après exécution. Elle retourne un exit code égal au nombre d'échecs.
+Chaque suite cree ses propres donnees et les supprime apres execution.
 
 ### Lancement manuel
 
 ```bash
-# Une suite à la fois
 docker compose exec backend python -m tests.auth
 docker compose exec backend python -m tests.courses
 docker compose exec backend python -m tests.quiz
 docker compose exec backend python -m tests.cosmetics
 ```
 
-### Lancement automatique au démarrage
+### Lancement automatique au demarrage
 
-Les tests se déclenchent après les migrations, via la variable `RUN_TESTS`. Le serveur **ne démarre pas** si un test échoue.
+Ajouter dans `.env` pour lancer les tests a chaque demarrage du backend (utile en CI/CD) :
 
-**Linux / macOS :**
-```bash
-RUN_TESTS=1 docker compose up --build
-```
-
-**Windows PowerShell :**
-```powershell
-$env:RUN_TESTS=1 ; docker compose up --build
-```
-
-Pour les activer en permanence (CI/CD, environnement de staging), ajouter dans `.env` :
 ```env
 RUN_TESTS=1
 ```
 
+Le serveur **ne demarre pas** si un test echoue.
+
 ---
+
+## Depannage
+
+**Le frontend affiche une erreur de connexion a l'API**
+Verifier que tous les services sont demarres : `docker compose ps`. Les services `backend` et `db` doivent etre `healthy`.
+
+**Le premier lancement est tres lent**
+Normal : npm installe les dependances lors du premier demarrage (1-3 min). Les suivants utilisent le cache du volume `frontend_node_modules`.
+
+**Erreur `InconsistentMigrationHistory`**
+La base de donnees existe deja avec un historique incompatible. Repartir d'une base vide :
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+**Forcer la reinstallation des dependances npm**
+```bash
+docker volume rm edunova_frontend_node_modules
+docker compose up --build
+```
