@@ -116,39 +116,7 @@ Une fois demarre, l'application est accessible :
 
 Le formateur dispose d'un back-office pour creer et gerer les cours et les quiz.
 
-#### Option A - Utiliser les donnees de demonstration *(recommande pour tester rapidement)*
-
-Charger les donnees de demo une fois l'application demarree :
-
-```bash
-docker compose exec backend python manage.py seed_cosmetics
-docker compose exec backend python manage.py seed_demo
-```
-
-Se connecter avec l'un de ces comptes :
-
-| Email | Mot de passe | Thematique |
-|-------|-------------|------------|
-| `marie.dubois@edunova.local` | `Edunova123!` | Cybersecurite |
-| `paul.martin@edunova.local` | `Edunova123!` | Reseaux |
-| `sofia.garcia@edunova.local` | `Edunova123!` | Developpement web |
-| `thomas.leroy@edunova.local` | `Edunova123!` | DevOps |
-
-#### Option B - Creer un formateur manuellement
-
-1. Creer un compte via la page d'inscription
-2. Assigner le role `formateur` a ce compte :
-
-```bash
-docker compose exec backend python manage.py shell -c "
-from apps.edunova.models import Role, Profile
-role = Role.objects.get(role_name='formateur')
-profile = Profile.objects.get(user__email='email@exemple.com')
-profile.role = role
-profile.save()
-print('Role formateur assigne.')
-"
-```
+> Les identifiants de connexion sont fournis separement.
 
 #### Pages accessibles au formateur
 
@@ -164,17 +132,7 @@ print('Role formateur assigne.')
 
 L'administrateur accede a toutes les pages du back-office, y compris la gestion des utilisateurs et les logs.
 
-#### Option A - Utiliser le compte de demo *(apres `seed_demo`)*
-
-| Email | Mot de passe |
-|-------|-------------|
-| `admin@edunova.local` | `Edunova123!` |
-
-#### Option B - Creer un superutilisateur
-
-```bash
-docker compose exec backend python manage.py createsuperuser
-```
+> Les identifiants de connexion sont fournis separement.
 
 #### Pages accessibles a l'administrateur
 
@@ -192,7 +150,7 @@ docker compose exec backend python manage.py createsuperuser
 
 Le script `seed_demo` peuple la base avec un jeu de donnees realiste :
 
-- **1 administrateur** (`admin@edunova.local`)
+- **1 administrateur**
 - **4 formateurs**, chacun responsable d'une thematique
 - **24 apprenants** avec des progressions variees (debutant, intermediaire, avance)
 - **4 thematiques**, **16 cours** complets avec quiz, questions et reponses
