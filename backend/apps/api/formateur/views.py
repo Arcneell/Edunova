@@ -4,17 +4,38 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.api.users.permissions import IsFormateur
-from apps.edunova.models import ActivityLog, Answer, Course, CourseEnrollment, Question, Quiz, UserBadge
+from apps.api.users.permissions import IsStaffOrFormateur
+from apps.edunova.models import ActivityLog, Answer, Course, CourseEnrollment, Question, Quiz, Theme, UserBadge
 from .serializers import (
     FormateurAnswerSerializer,
     FormateurCourseSerializer,
     FormateurQuestionSerializer,
     FormateurQuizSerializer,
+    FormateurThemeSerializer,
     LearnerStatSerializer,
 )
 
-FORMATEUR_PERMISSIONS = [IsAuthenticated, IsFormateur]
+FORMATEUR_PERMISSIONS = [IsAuthenticated, IsStaffOrFormateur]
+
+
+def _quiz_for_editor(request, quiz_id: int) -> Quiz:
+    if getattr(request.user, 'is_staff', False):
+        return get_object_or_404(Quiz, pk=quiz_id)
+    return get_object_or_404(Quiz, pk=quiz_id, created_by=request.user)
+
+
+def _question_for_editor(request, question_id: int) -> Question:
+    if getattr(request.user, 'is_staff', False):
+        return get_object_or_404(Question, pk=question_id)
+    return get_object_or_404(Question, pk=question_id, quiz__created_by=request.user)
+
+
+def _answer_for_editor(request, answer_id: int) -> Answer:
+    if getattr(request.user, 'is_staff', False):
+        return get_object_or_404(Answer, pk=answer_id)
+    return get_object_or_404(
+        Answer, pk=answer_id, question__quiz__created_by=request.user
+    )
 
 
 # ── Cours ──────────────────────────────────────────────────────────────────────
@@ -77,6 +98,40 @@ class FormateurCourseDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ── Catégories (thèmes) ─────────────────────────────────────────────────────────
+
+class FormateurThemeListCreateView(APIView):
+    """POST /api/formateur/themes/ — créer une catégorie (thème pédagogique)."""
+
+    permission_classes = FORMATEUR_PERMISSIONS
+
+    def post(self, request):
+        serializer = FormateurThemeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class FormateurThemeDetailView(APIView):
+    """DELETE /api/formateur/themes/<theme_id>/"""
+
+    permission_classes = FORMATEUR_PERMISSIONS
+
+    def delete(self, request, theme_id):
+        theme = get_object_or_404(Theme, pk=theme_id)
+        if Course.objects.filter(theme=theme).exists():
+            return Response(
+                {
+                    'detail': (
+                        'Impossible de supprimer cette catégorie : des cours y sont encore rattachés.'
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        theme.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class FormateurCourseStatsView(APIView):
     """GET /api/formateur/courses/<course_id>/stats/
 
@@ -134,7 +189,11 @@ class FormateurQuizListCreateView(APIView):
         ActivityLog.objects.create(
             user=request.user,
             action=ActivityLog.Action.QUIZ_CREATE,
-            metadata={'quiz_id': quiz.quiz_id, 'title': quiz.quiz_title},
+            metadata={
+                'quiz_id': quiz.quiz_id,
+                'min_score_to_pass': quiz.min_score_to_pass,
+                'coins_on_success': quiz.coins_on_success,
+            },
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -145,7 +204,7 @@ class FormateurQuizDetailView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def _get_own_quiz(self, request, quiz_id):
-        return get_object_or_404(Quiz, pk=quiz_id, created_by=request.user)
+        return _quiz_for_editor(request, quiz_id)
 
     def get(self, request, quiz_id):
         return Response(FormateurQuizSerializer(self._get_own_quiz(request, quiz_id)).data)
@@ -187,7 +246,7 @@ class FormateurQuestionListCreateView(APIView):
         return Response(FormateurQuestionSerializer(questions, many=True).data)
 
     def post(self, request, quiz_id):
-        quiz = get_object_or_404(Quiz, pk=quiz_id, created_by=request.user)
+        quiz = _quiz_for_editor(request, quiz_id)
         serializer = FormateurQuestionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         question = serializer.save(quiz=quiz)
@@ -205,7 +264,7 @@ class FormateurQuestionDetailView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def _get_own_question(self, request, question_id):
-        return get_object_or_404(Question, pk=question_id, quiz__created_by=request.user)
+        return _question_for_editor(request, question_id)
 
     def patch(self, request, question_id):
         question = self._get_own_question(request, question_id)
@@ -244,7 +303,7 @@ class FormateurAnswerListCreateView(APIView):
         return Response(FormateurAnswerSerializer(answers, many=True).data)
 
     def post(self, request, question_id):
-        question = get_object_or_404(Question, pk=question_id, quiz__created_by=request.user)
+        question = _question_for_editor(request, question_id)
         serializer = FormateurAnswerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         answer = serializer.save(question=question)
@@ -262,7 +321,7 @@ class FormateurAnswerDetailView(APIView):
     permission_classes = FORMATEUR_PERMISSIONS
 
     def _get_own_answer(self, request, answer_id):
-        return get_object_or_404(Answer, pk=answer_id, question__quiz__created_by=request.user)
+        return _answer_for_editor(request, answer_id)
 
     def patch(self, request, answer_id):
         answer = self._get_own_answer(request, answer_id)

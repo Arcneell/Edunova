@@ -1,6 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { DashHero, DashLayout } from '../components/dash/index.js'
 import { useAuth } from '../hooks/useAuth.js'
+
+function adminLinkClass({ isActive }) {
+  return `admin-nav__link ${isActive ? 'admin-nav__link--active' : ''}`
+}
 
 export default function AdminDashboard() {
   const { user } = useAuth()

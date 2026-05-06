@@ -129,9 +129,11 @@ Sessions Django + cookie CSRF. Erreurs DRF : `{ "detail": "..." }` ou erreurs pa
 
 | Méthode | Chemin | Description |
 |---------|--------|-------------|
-| `GET` | `/api/admin/users/` | Liste paginée des comptes (25/page) |
+| `GET` | `/api/admin/users/` | Liste paginée des comptes (25/page) ; query `page_size`, `role_name` (ex. `formateur`) |
+| `POST` | `/api/admin/users/` | Créer un compte (`email`, `password`, `role_id`, `formateur_id` si apprenant, `is_active`, `is_staff`) |
 | `GET` | `/api/admin/users/<user_id>/` | Détail d'un compte |
 | `PATCH` | `/api/admin/users/<user_id>/` | Modifier un compte (ex. changer le rôle) |
+| `DELETE` | `/api/admin/users/<user_id>/` | Supprimer un compte (interdit : soi-même ; superuser réservé aux superusers) |
 
 ---
 

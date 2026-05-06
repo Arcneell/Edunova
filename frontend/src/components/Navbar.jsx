@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 
 function normalizeRoleName(name) {
@@ -43,11 +43,18 @@ function ChevronDown() {
 export default function Navbar() {
   const { user, loading, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const location = useLocation()
+  const megaDetailsRef = useRef(null)
   const isTrainer = normalizeRoleName(user?.role?.role_name) === 'formateur'
   const canAccessLearningAdmin = Boolean(user?.is_staff || isTrainer)
 
   function closeMobile() {
     setMobileOpen(false)
+  }
+
+  function closeMegaMenu() {
+    const el = megaDetailsRef.current
+    if (el) el.open = false
   }
 
   function navLinkClass({ isActive }) {
@@ -69,12 +76,17 @@ export default function Navbar() {
     }
   }, [mobileOpen])
 
+  useEffect(() => {
+    const el = megaDetailsRef.current
+    if (el) el.open = false
+  }, [location.pathname])
+
   const showTeamBlock = Boolean(user && (canAccessLearningAdmin || user.is_staff))
 
   return (
     <header className="navbar">
       <div className="navbar__inner">
-        <Link to="/" className="navbar__brand" onClick={closeMobile}>
+        <Link to={user ? '/dashboard' : '/'} className="navbar__brand" onClick={closeMobile}>
           <img className="navbar__logo" src="/edunova-mark.svg" alt="" decoding="async" />
           <span className="navbar__title">Edunova</span>
         </Link>
@@ -86,8 +98,13 @@ export default function Navbar() {
         >
           <div className="navbar__primary-row">
             <div className="navbar__scroll">
-              <NavLink to="/" className={navLinkClass} end onClick={closeMobile}>
-                Accueil
+              <NavLink
+                to={user ? '/dashboard' : '/'}
+                className={navLinkClass}
+                end
+                onClick={closeMobile}
+              >
+                {user ? 'Tableau de bord' : 'Accueil'}
               </NavLink>
 
               {!loading && !user ? (
@@ -118,23 +135,44 @@ export default function Navbar() {
             </div>
 
             {showTeamBlock ? (
-              <details className="navbar__mega">
+              <details ref={megaDetailsRef} className="navbar__mega">
                 <summary className="navbar__mega-summary">
                   <span>Équipe</span>
                   <ChevronDown />
                 </summary>
                 <div className="navbar__mega-panel" role="group" aria-label="Outils équipe">
                   {user.is_staff ? (
-                    <NavLink to="/admin/users" className={submenuLinkClass} onClick={closeMobile}>
+                    <NavLink
+                      to="/admin/users"
+                      className={submenuLinkClass}
+                      onClick={() => {
+                        closeMobile()
+                        closeMegaMenu()
+                      }}
+                    >
                       Utilisateurs
                     </NavLink>
                   ) : null}
                   {canAccessLearningAdmin ? (
                     <>
-                      <NavLink to="/admin/cours" className={submenuLinkClass} onClick={closeMobile}>
+                      <NavLink
+                        to="/admin/cours"
+                        className={submenuLinkClass}
+                        onClick={() => {
+                          closeMobile()
+                          closeMegaMenu()
+                        }}
+                      >
                         Cours
                       </NavLink>
-                      <NavLink to="/admin/quizz" className={submenuLinkClass} onClick={closeMobile}>
+                      <NavLink
+                        to="/admin/quizz"
+                        className={submenuLinkClass}
+                        onClick={() => {
+                          closeMobile()
+                          closeMegaMenu()
+                        }}
+                      >
                         Quiz
                       </NavLink>
                     </>

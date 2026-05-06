@@ -25,9 +25,9 @@
   --surface: #ffffff;
   --border: #e2e8f0;
   --accent: var(--brand-blue);
-  --accent-hover: color-mix(in srgb, var(--brand-blue) 72%, var(--brand-purple));
-  --accent-soft: color-mix(in srgb, var(--brand-blue) 14%, transparent);
-  --accent-ring: color-mix(in srgb, var(--brand-pink) 38%, var(--brand-blue));
+  --accent-hover: #4f40dc;
+  --accent-soft: rgba(27, 23, 255, 0.14);
+  --accent-ring: rgba(180, 40, 150, 0.45);
   --accent-gradient: linear-gradient(
     115deg,
     var(--brand-blue) 0%,
@@ -36,9 +36,9 @@
   );
   --accent-gradient-hover: linear-gradient(
     115deg,
-    color-mix(in srgb, var(--brand-blue) 90%, #000) 0%,
-    color-mix(in srgb, var(--brand-purple) 90%, #000) 55%,
-    color-mix(in srgb, var(--brand-pink) 90%, #000) 100%
+    #1713cc 0%,
+    #5c32b0 55%,
+    #e6006e 100%
   );
   --success: #059669;
   --danger: #dc2626;
@@ -74,21 +74,21 @@
     --bg-subtle: #131722;
     --surface: #161b26;
     --border: #2a3142;
-    --accent: color-mix(in srgb, var(--brand-blue) 76%, #ffffff);
-    --accent-hover: color-mix(in srgb, var(--brand-purple) 68%, #ffffff);
-    --accent-soft: color-mix(in srgb, var(--brand-blue) 22%, transparent);
-    --accent-ring: color-mix(in srgb, var(--brand-pink) 45%, transparent);
+    --accent: #7a73ff;
+    --accent-hover: #9890ff;
+    --accent-soft: rgba(27, 23, 255, 0.22);
+    --accent-ring: rgba(255, 0, 122, 0.38);
     --accent-gradient: linear-gradient(
       115deg,
-      color-mix(in srgb, var(--brand-blue) 88%, #fff) 0%,
-      color-mix(in srgb, var(--brand-purple) 88%, #fff) 55%,
-      color-mix(in srgb, var(--brand-pink) 88%, #fff) 100%
+      #8a84ff 0%,
+      #a07aee 55%,
+      #ff4da6 100%
     );
     --accent-gradient-hover: linear-gradient(
       115deg,
-      color-mix(in srgb, var(--brand-blue) 78%, #fff) 0%,
-      color-mix(in srgb, var(--brand-purple) 78%, #fff) 55%,
-      color-mix(in srgb, var(--brand-pink) 78%, #fff) 100%
+      #7068e8 0%,
+      #8a62d8 55%,
+      #e63990 100%
     );
     --success: #34d399;
     --danger: #f87171;

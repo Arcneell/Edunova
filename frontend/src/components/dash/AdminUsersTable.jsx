@@ -1,7 +1,7 @@
 import { BrandBadge } from './BrandBadge.jsx'
 import { StatusPill } from './StatusPill.jsx'
 
-export function AdminUsersTable({ rows }) {
+export function AdminUsersTable({ rows, onEditRow, onDeleteRow }) {
   return (
     <table className="dash-table">
       <thead>
@@ -12,6 +12,7 @@ export function AdminUsersTable({ rows }) {
           <th scope="col">Actif</th>
           <th scope="col">Staff</th>
           <th scope="col">Inscription</th>
+          {(onEditRow || onDeleteRow) && <th scope="col">Actions</th>}
         </tr>
       </thead>
       <tbody>
@@ -37,6 +38,22 @@ export function AdminUsersTable({ rows }) {
             <td className="dash-table__date">
               {row.date_joined ? new Date(row.date_joined).toLocaleString('fr-FR') : '—'}
             </td>
+            {(onEditRow || onDeleteRow) && (
+              <td>
+                <div className="dash-table-actions">
+                  {onEditRow ? (
+                    <button type="button" className="btn btn--secondary" onClick={() => onEditRow(row)}>
+                      Modifier
+                    </button>
+                  ) : null}
+                  {onDeleteRow ? (
+                    <button type="button" className="btn btn--secondary" onClick={() => onDeleteRow(row)}>
+                      Supprimer
+                    </button>
+                  ) : null}
+                </div>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>

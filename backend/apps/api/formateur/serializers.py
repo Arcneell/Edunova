@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.edunova.models import Answer, Course, Question, Quiz
+from apps.edunova.models import Answer, Course, Question, Quiz, Theme
 
 
 class FormateurQuizSerializer(serializers.ModelSerializer):
@@ -32,6 +32,19 @@ class FormateurCourseSerializer(serializers.ModelSerializer):
             'theme', 'validating_quiz', 'delivered_badge',
         ]
         read_only_fields = ['course_id']
+
+
+class FormateurThemeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Theme
+        fields = ['theme_id', 'theme_title']
+        read_only_fields = ['theme_id']
+
+    def validate_theme_title(self, value: str) -> str:
+        cleaned = (value or '').strip()
+        if not cleaned:
+            raise serializers.ValidationError('Le titre est requis.')
+        return cleaned
 
 
 class LearnerStatSerializer(serializers.Serializer):

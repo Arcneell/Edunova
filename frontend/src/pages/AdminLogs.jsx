@@ -78,7 +78,10 @@ export default function AdminLogs() {
 
   // Chargement initial + rechargement quand page ou filtre change
   useEffect(() => {
-    load(page, actionFilter)
+    const id = window.setTimeout(() => {
+      void load(page, actionFilter)
+    }, 0)
+    return () => window.clearTimeout(id)
   }, [page, actionFilter, load])
 
   // Polling live (page 1 uniquement, rafraîchissement silencieux)

@@ -10,9 +10,13 @@ from .views import (
     FormateurQuestionListCreateView,
     FormateurQuizDetailView,
     FormateurQuizListCreateView,
+    FormateurThemeDetailView,
+    FormateurThemeListCreateView,
 )
 
 urlpatterns = [
+    path('themes/', FormateurThemeListCreateView.as_view(), name='formateur-theme-list'),
+    path('themes/<int:theme_id>/', FormateurThemeDetailView.as_view(), name='formateur-theme-detail'),
     # Cours
     path('courses/', FormateurCourseListCreateView.as_view(), name='formateur-course-list'),
     path('courses/<int:course_id>/', FormateurCourseDetailView.as_view(), name='formateur-course-detail'),

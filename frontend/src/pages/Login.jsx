@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { getReadableFormError } from '../utils/formErrors.js'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, user, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState(null)
@@ -40,6 +40,10 @@ export default function Login() {
     }
   }
 
+  if (!loading && user) {
+    return <Navigate to={user.is_staff ? '/admin' : '/compte'} replace />
+  }
+
   return (
     <div className="page">
       <div className="auth-layout">
@@ -51,8 +55,8 @@ export default function Login() {
           </p>
           <ul className="auth-points">
             <li>Connexion sécurisée</li>
-            <li>Redirection automatique selon le rôle</li>
-            <li>Interface optimisée mobile / desktop</li>
+            <li>Accès à votre espace personnel</li>
+            <li>Utilisable sur téléphone et ordinateur</li>
           </ul>
         </section>
 

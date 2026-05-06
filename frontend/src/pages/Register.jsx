@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { listRoles } from '../api/user/roles.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { getReadableFormError } from '../utils/formErrors.js'
@@ -17,7 +17,7 @@ const SIGNUP_ROLES_NORMALIZED = new Set(['utilisateur', 'eleve', 'etudiant'])
 
 export default function Register() {
   const navigate = useNavigate()
-  const { register } = useAuth()
+  const { register, user, loading: authLoading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [roleId, setRoleId] = useState('')
@@ -79,6 +79,10 @@ export default function Register() {
     } catch (ex) {
       setErr(getReadableFormError(ex, "Impossible de finaliser l'inscription. Vérifiez les champs du formulaire."))
     }
+  }
+
+  if (!authLoading && user) {
+    return <Navigate to={user.is_staff ? '/admin' : '/compte'} replace />
   }
 
   return (

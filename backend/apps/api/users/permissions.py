@@ -60,3 +60,19 @@ class IsFormateur(BasePermission):
             return is_formateur_role(request.user.role.role_name)
         except AttributeError:
             return False
+
+
+class IsStaffOrFormateur(BasePermission):
+    """Équipe Django (is_staff) ou rôle formateur — aligné avec le shell admin front."""
+
+    message = "Accès réservé aux formateurs ou à l'équipe."
+
+    def has_permission(self, request, view) -> bool:
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if getattr(request.user, 'is_staff', False):
+            return True
+        try:
+            return is_formateur_role(request.user.role.role_name)
+        except AttributeError:
+            return False

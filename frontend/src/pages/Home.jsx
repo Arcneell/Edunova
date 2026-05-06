@@ -1,11 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
-
-/**
- * Vérité produit (pour le wording de cette page uniquement — aligné avec le code SPA) :
- * - Routes : /login, /register, /compte, /courses/ma-thematiques (carte + quiz), /admin(+ sous-routes avec garde roles)
- * - API : themes, checkpoints sur carte, soumission quiz session Django + CSRF, profils, utilisateurs admin staff, cours/quiz pour formateurs
- */
 
 function ChipIconCourses() {
   return (
@@ -48,13 +42,9 @@ function ChipIconQuiz() {
 export default function Home() {
   const { user, loading } = useAuth()
 
-  const isTrainer =
-    String(user?.role?.role_name || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim()
-      .toLowerCase() === 'formateur'
-  const canTeam = Boolean(user?.is_staff || isTrainer)
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
     <div className="page landing-stack">
@@ -63,30 +53,15 @@ export default function Home() {
           <div>
             <p className="landing-tagline">Apprendre. Innover. Grandir.</p>
             <h1 id="landing-heading">
-              Une plateforme où le parcours compte aussi&nbsp;:&nbsp;parcours par thématiques, quizzes et tableau de bord équipe.
+              Des parcours clairs, des quiz pour valider vos idées, et un suivi visuel de votre progression.
             </h1>
             <p className="landing-lead">
-              Connectez-vous pour suivre vos cours sur une carte de progression (checkpoints débloqués au fil des réussites&nbsp;quiz),
-              gérer votre compte ou, pour les équipes habilitées, administrer cours et questionnaires — le tout relié aux APIs Edunova.
+              Edunova vous accompagne thématique par thématique : avancez à votre rythme, mesurez ce que vous
+              avez retenu, et gardez une vue d’ensemble sur votre apprentissage.
             </p>
             <div className="hero-actions">
               {loading ? <span className="muted">Chargement…</span> : null}
-              {!loading && user ? (
-                <>
-                  <Link to="/courses/ma-thematiques" className="btn btn--primary">
-                    Ouvrir ma map
-                  </Link>
-                  <Link to="/compte" className="btn btn--secondary">
-                    Mon compte
-                  </Link>
-                  {canTeam ? (
-                    <Link to="/admin" className="btn btn--secondary">
-                      Espace équipe
-                    </Link>
-                  ) : null}
-                </>
-              ) : null}
-              {!loading && !user ? (
+              {!loading ? (
                 <>
                   <Link to="/register" className="btn btn--primary">
                     Créer un compte
@@ -102,15 +77,15 @@ export default function Home() {
             <div className="landing-stat-chip">
               <ChipIconCourses />
               <div>
-                <strong>Carte &amp; thématiques</strong>
-                <span>Vous choisissez une thématique, la carte liste les cours dans l’ordre du parcours (points verrouillés ou disponibles).</span>
+                <strong>Parcours par thèmes</strong>
+                <span>Chaque thématique se déroule comme un chemin : les étapes se débloquent au fil de votre réussite.</span>
               </div>
             </div>
             <div className="landing-stat-chip">
               <ChipIconQuiz />
               <div>
-                <strong>Quiz intégrés</strong>
-                <span>Ouverture d&apos;un quiz depuis la carte ; résultats synchronisés côté serveur avant de poursuivre.</span>
+                <strong>Quiz pour s’entraîner</strong>
+                <span>Des questions courtes pour vérifier vos acquis avant de passer à la suite.</span>
               </div>
             </div>
             <div className="landing-stat-chip">
@@ -120,8 +95,8 @@ export default function Home() {
                 <circle cx="17" cy="27" r="2.5" fill="#ff007a" />
               </svg>
               <div>
-                <strong>Admin équipe</strong>
-                <span>Liens dédiés formateurs&nbsp;/&nbsp;staff sur la carte des cours et des quiz, plus tableau de bord central.</span>
+                <strong>Pour les organismes</strong>
+                <span>Équipes pédagogiques : créez et organisez vos contenus pour vos apprenants.</span>
               </div>
             </div>
           </aside>
@@ -130,96 +105,68 @@ export default function Home() {
 
       <section className="landing-section" aria-labelledby="pillars-heading">
         <header className="landing-section__head">
-          <h2 id="pillars-heading">Ce que l’app livre déjà dans le navigateur</h2>
-          <p>
-            Quatre usages concrets reflétés par les pages et endpoints actuels — sans promesses sur des briques encore absentes de l’interface.
-          </p>
+          <h2 id="pillars-heading">Ce que vous y trouverez</h2>
+          <p>Une expérience pensée pour apprendre sans se perdre.</p>
         </header>
         <div className="landing-pillars">
           <article className="landing-pillar">
-            <p className="landing-pillar__eyebrow">Parcourir</p>
-            <h3>Cours &amp; progression</h3>
-            <p>
-              Sélectionnez une thématique, validez l’entrée dans la carte et suivez chaque checkpoint jusqu’aux quizzes associés.
-            </p>
+            <p className="landing-pillar__eyebrow">Progresser</p>
+            <h3>Cours structurés</h3>
+            <p>Des contenus rangés dans l’ordre du parcours, pour avancer étape par étape.</p>
           </article>
           <article className="landing-pillar">
-            <p className="landing-pillar__eyebrow">Réussir</p>
-            <h3>Quizzes &amp; déblocage</h3>
-            <p>
-              Les questionnaires liés aux cours suivent vos réponses ; votre avancement sur la map reflète ces états métier renvoyés par l&apos;API.
-            </p>
+            <p className="landing-pillar__eyebrow">Se tester</p>
+            <h3>Quiz motivants</h3>
+            <p>Validez ce que vous avez compris avant d’ouvrir la prochaine étape.</p>
           </article>
           <article className="landing-pillar">
-            <p className="landing-pillar__eyebrow">Administrer</p>
-            <h3>Espace cours &amp; quiz</h3>
-            <p>
-              Les comptes formateurs et le staff peuvent accéder aux écrans d’organisation des cours et des quiz depuis le tableau de bord.
-            </p>
+            <p className="landing-pillar__eyebrow">Organiser</p>
+            <h3>Outils pour l’équipe</h3>
+            <p>Pour préparer cours et évaluations lorsque vous animez une formation.</p>
           </article>
           <article className="landing-pillar">
-            <p className="landing-pillar__eyebrow">Compte</p>
-            <h3>Rôles &amp; profil</h3>
-            <p>
-              Inscription sécurisée, session Django, page compte lecture des informations et des habilitations liées au rôle.
-            </p>
+            <p className="landing-pillar__eyebrow">Personnel</p>
+            <h3>Votre espace</h3>
+            <p>Un compte pour retrouver votre parcours et vos informations en un coup d’œil.</p>
           </article>
         </div>
       </section>
 
       <section className="landing-steps-wrap">
         <header className="landing-section__head" style={{ marginBottom: 'var(--space-4)' }}>
-          <h2>Comment votre flux se lit dans l’app</h2>
-          <p>Ordre représentatif côté apprenant, du choix du thème à la validation des questionnaires.</p>
+          <h2>Comment ça marche</h2>
+          <p>Quelques étapes simples pour commencer.</p>
         </header>
         <ol className="landing-steps">
           <li className="landing-step">
-            <h3>S’authentifier</h3>
-            <p>Inscription puis connexion par session ; redirection vers les pages réservées.</p>
+            <h3>Créer un compte</h3>
+            <p>Inscription rapide avec votre adresse e-mail.</p>
           </li>
           <li className="landing-step">
-            <h3>Entrer dans une thématique</h3>
-            <p>Sur «&nbsp;Ma map&nbsp;», liste des thèmes disponibles puis chargement des checkpoints depuis l’API.</p>
+            <h3>Choisir un thème</h3>
+            <p>Sélectionnez le sujet qui vous intéresse parmi les parcours proposés.</p>
           </li>
           <li className="landing-step">
-            <h3>Jouer la carte</h3>
-            <p>Vue plein écran de la carte, nœuds cliquables pour ouvrir un cours ou passer au quiz suivant lorsque c’est autorisé.</p>
+            <h3>Suivre la carte</h3>
+            <p>Visualisez où vous en êtes et ouvrez les étapes au bon moment.</p>
           </li>
           <li className="landing-step">
-            <h3>Corriger et débloquer</h3>
-            <p>Réponses soumises côté serveur ; retour utilisateur ; passer au point suivant quand les règles métier le permettent.</p>
+            <h3>Réussir les quiz</h3>
+            <p>Répondez aux questions pour confirmer vos acquis et débloquer la suite.</p>
           </li>
         </ol>
       </section>
 
       <section className="landing-cta-panel">
-        <h2>Passer au concret&nbsp;: connexion ou accès équipe</h2>
-        <p>
-          {user
-            ? 'Allez vers votre carte, votre espace personnel ou vos outils d’organisation selon vos droits.'
-            : 'Créez un compte utilisateur ou connectez-vous pour voir vos thématiques et votre progression.'}
-        </p>
+        <h2>Prêt à commencer&nbsp;?</h2>
+        <p>Créez un compte ou connectez-vous pour accéder à votre parcours.</p>
         <div className="hero-actions">
-          {!loading && user ? (
-            <>
-              <Link to="/courses/ma-thematiques" className="btn btn--primary">
-                Ma map de cours
-              </Link>
-              <Link to="/compte" className="btn btn--secondary">
-                Mon compte
-              </Link>
-            </>
-          ) : null}
-          {!loading && !user ? (
-            <>
-              <Link to="/register" className="btn btn--primary">
-                Inscription
-              </Link>
-              <Link to="/login" className="btn btn--secondary">
-                Connexion
-              </Link>
-            </>
-          ) : null}
+          <Link to="/register" className="btn btn--primary">
+            Inscription
+          </Link>
+          <Link to="/login" className="btn btn--secondary">
+            Connexion
+          </Link>
         </div>
       </section>
     </div>

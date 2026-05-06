@@ -19,7 +19,7 @@ urlpatterns = [
     path('me/badges/', MyBadgeListView.as_view(), name='api_me_badges'),
     path('me/purchases/', MyPurchaseListView.as_view(), name='api_me_purchases'),
     path('me/equip/', EquipCosmeticView.as_view(), name='api_me_equip'),
-    path('admin/users/', views.AdminUserListView.as_view(), name='api_admin_users_list'),
+    path('admin/users/', views.AdminUserListCreateView.as_view(), name='api_admin_users_list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='api_admin_users_detail'),
     path('admin/logs/', views.AdminActivityLogListView.as_view(), name='api_admin_logs'),
 ]

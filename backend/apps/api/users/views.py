@@ -6,6 +6,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 
 from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -13,6 +14,7 @@ from rest_framework.views import APIView
 
 from apps.api.users.permissions import IsStaffUser
 from apps.api.users.serializers import (
+    AdminUserCreateSerializer,
     AdminUserDetailSerializer,
     AdminUserListSerializer,
     LoginSerializer,
@@ -110,21 +112,6 @@ class MeView(APIView):
         return Response(MeSerializer(request.user).data)
 
 
-class MeProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        profile = request.user.profile
-        return Response(ProfileReadSerializer(profile).data)
-
-    def patch(self, request):
-        profile = request.user.profile
-        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(ProfileReadSerializer(profile).data)
-
-
 class RolesListView(generics.ListAPIView):
     """Liste des rôles (inscription, scripts de test)."""
 
@@ -139,22 +126,48 @@ class AdminUserPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class AdminUserListView(generics.ListAPIView):
-    """Liste paginée des comptes (staff)."""
+class AdminUserListCreateView(generics.ListCreateAPIView):
+    """Liste paginée des comptes (staff) · POST pour créer un compte."""
 
     permission_classes = [IsAuthenticated, IsStaffUser]
-    serializer_class = AdminUserListSerializer
     pagination_class = AdminUserPagination
     queryset = User.objects.select_related('role').order_by('-date_joined')
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AdminUserCreateSerializer
+        return AdminUserListSerializer
 
-class AdminUserDetailView(generics.RetrieveUpdateAPIView):
-    """Détail ou mise à jour partielle d’un compte (staff)."""
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role_name = (self.request.query_params.get('role_name') or '').strip()
+        if role_name:
+            qs = qs.filter(role__role_name__iexact=role_name)
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        user = User.objects.select_related('role', 'profile', 'profile__rank').get(pk=user.pk)
+        return Response(AdminUserDetailSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Détail, mise à jour partielle ou suppression d’un compte (staff)."""
 
     permission_classes = [IsAuthenticated, IsStaffUser]
     serializer_class = AdminUserDetailSerializer
     lookup_field = 'user_id'
     queryset = User.objects.select_related('role', 'profile', 'profile__rank')
+
+    def perform_destroy(self, instance: User) -> None:
+        if instance.pk == self.request.user.pk:
+            raise PermissionDenied('Vous ne pouvez pas supprimer votre propre compte.')
+        if instance.is_superuser and not self.request.user.is_superuser:
+            raise PermissionDenied('Seul un super-utilisateur peut supprimer ce compte.')
+        instance.delete()
+
 
 class AdminLogPagination(PageNumberPagination):
     page_size = 50
