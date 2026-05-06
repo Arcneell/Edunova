@@ -1,0 +1,979 @@
+/* ——— Carte parcours RPG : sentier traversant 3 biomes (plaines / forêt / citadelle) ——— */
+
+.course-map-scope {
+  --map-track-radius: 18px;
+  --map-node-size: clamp(46px, 5.2vw, 58px);
+  --map-node-half: calc(var(--map-node-size) / 2);
+  --map-avatar-gap: 12px;
+  --map-biome-plaines: #16a34a;
+  --map-biome-foret: #7242d0;
+  --map-biome-citadelle: #ff007a;
+}
+
+/* Plein écran */
+.course-map-fullscreen {
+  position: fixed;
+  inset: clamp(3.5rem, 11vw, 4.85rem) 0 0 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--layout-px) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 900px) {
+  .course-map-fullscreen {
+    overflow: hidden;
+  }
+}
+
+.course-map-rpg__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.course-map-rpg__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.course-map-rpg__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand-purple);
+}
+
+.course-map-rpg__title-block strong {
+  font-size: clamp(1.125rem, 2.6vw, 1.4rem);
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
+}
+
+/* Layout : journal + arène. Sur mobile, la carte passe au-dessus du journal. */
+.course-map-rpg__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+@media (min-width: 900px) {
+  .course-map-rpg__body {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+}
+
+.course-map-rpg__arena {
+  order: 0;
+}
+
+.course-map-rpg__legend {
+  order: 1;
+}
+
+@media (min-width: 900px) {
+  .course-map-rpg__legend { order: 0; }
+  .course-map-rpg__arena { order: 1; }
+}
+
+/* Journal de quête */
+.course-map-rpg__legend {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-4);
+}
+
+@media (min-width: 900px) {
+  .course-map-rpg__legend {
+    max-height: 100%;
+    overflow-y: auto;
+  }
+}
+
+.course-map-rpg__legend-head {
+  margin: 0 0 var(--space-3);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-purple);
+}
+
+.course-map-rpg__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.course-map-rpg__step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.course-map-rpg__step--completed {
+  border-color: rgba(5, 150, 105, 0.45);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.10), rgba(27, 23, 255, 0.04));
+}
+
+.course-map-rpg__step--current {
+  border-color: var(--brand-purple);
+  background: linear-gradient(135deg, rgba(255, 0, 122, 0.08), rgba(114, 66, 208, 0.06));
+  box-shadow: 0 6px 20px rgba(114, 66, 208, 0.18);
+}
+
+.course-map-rpg__step--locked {
+  opacity: 0.65;
+}
+
+.course-map-rpg__step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent-gradient);
+}
+
+.course-map-rpg__step--completed .course-map-rpg__step-num {
+  background: linear-gradient(145deg, #10b981, #047857);
+}
+
+.course-map-rpg__step--locked .course-map-rpg__step-num {
+  filter: grayscale(0.85);
+  opacity: 0.7;
+}
+
+.course-map-rpg__step-meta {
+  min-width: 0;
+}
+
+.course-map-rpg__step-meta strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.course-map-rpg__step-meta span {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.course-map-rpg__badge {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.course-map-rpg__badge--ok {
+  color: var(--success);
+  border: 1px solid rgba(5, 150, 105, 0.4);
+  background: rgba(5, 150, 105, 0.08);
+}
+
+.course-map-rpg__badge--wip {
+  color: var(--brand-pink);
+  border: 1px solid rgba(255, 0, 122, 0.42);
+  background: rgba(255, 0, 122, 0.08);
+}
+
+.course-map-rpg__badge--locked {
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+/* Arène = plateau */
+.course-map-rpg__arena {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+@media (min-width: 900px) {
+  .course-map-rpg__arena {
+    flex: 1 1 auto;
+  }
+}
+
+.course-map__board {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--map-track-radius);
+  overflow: visible;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 900px) {
+  .course-map__board {
+    max-height: min(calc(100vh - 200px), 60vh);
+  }
+}
+
+@media (max-width: 899px) {
+  .course-map-scope {
+    --map-node-size: clamp(38px, 9vw, 50px);
+  }
+
+  .course-map__board {
+    min-height: 240px;
+  }
+}
+
+.course-map__surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.course-map__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Nœuds : pastilles rondes teintées par biome */
+.course-map__node {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  width: var(--map-node-size);
+  height: var(--map-node-size);
+  border-radius: 999px;
+  border: 3px solid var(--node-accent, var(--brand-purple));
+  background: var(--surface);
+  color: var(--node-accent, var(--brand-purple));
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-family: var(--mono);
+  box-shadow:
+    0 0 0 4px var(--node-glow, rgba(114, 66, 208, 0.18)),
+    0 8px 22px rgba(15, 23, 42, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.course-map__node[data-biome='plaines'] {
+  --node-accent: var(--map-biome-plaines);
+  --node-glow: rgba(22, 163, 74, 0.22);
+}
+
+.course-map__node[data-biome='foret'] {
+  --node-accent: var(--map-biome-foret);
+  --node-glow: rgba(114, 66, 208, 0.22);
+}
+
+.course-map__node[data-biome='citadelle'] {
+  --node-accent: var(--map-biome-citadelle);
+  --node-glow: rgba(255, 0, 122, 0.22);
+}
+
+.course-map__node:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow:
+    0 0 0 5px var(--node-glow),
+    0 12px 28px rgba(15, 23, 42, 0.24);
+  z-index: 4;
+}
+
+.course-map__node:disabled {
+  cursor: not-allowed;
+}
+
+.course-map__node-level {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.course-map__node-num {
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.course-map__node-icon {
+  width: 55%;
+  height: 55%;
+  display: grid;
+  place-items: center;
+}
+
+.course-map__node-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* États */
+.course-map__node--completed {
+  background: linear-gradient(145deg, #10b981, #047857);
+  border-color: #047857;
+  color: #ecfdf5;
+  --node-glow: rgba(16, 185, 129, 0.28);
+}
+
+.course-map__node--locked {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-muted);
+  --node-glow: rgba(148, 163, 184, 0.18);
+  filter: saturate(0.4);
+}
+
+.course-map__node--unlocked {
+  animation: course-map-node-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes course-map-node-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px var(--node-glow),
+      0 8px 22px rgba(15, 23, 42, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9px transparent,
+      0 0 0 5px var(--node-glow),
+      0 14px 30px rgba(15, 23, 42, 0.22);
+  }
+}
+
+/* Avatar joueur sur nœud actif */
+.course-map__player {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, calc(-100% - var(--map-node-half) - var(--map-avatar-gap)));
+  width: clamp(46px, 6.6vw, 56px);
+  height: clamp(46px, 6.6vw, 56px);
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: linear-gradient(145deg, var(--surface), var(--bg-subtle));
+  box-shadow:
+    0 0 0 2px rgba(15, 23, 42, 0.18),
+    0 12px 28px rgba(27, 23, 255, 0.22),
+    0 0 22px rgba(255, 0, 122, 0.32);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: course-map-player-bob 3s ease-in-out infinite;
+}
+
+@keyframes course-map-player-bob {
+  0%, 100% {
+    transform: translate(-50%, calc(-100% - var(--map-node-half) - var(--map-avatar-gap)));
+  }
+  50% {
+    transform: translate(-50%, calc(-100% - var(--map-node-half) - var(--map-avatar-gap) - 4px));
+  }
+}
+
+.course-map__player::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid #fff;
+  filter: drop-shadow(0 2px 2px rgba(15, 23, 42, 0.35));
+}
+
+.course-map__player-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
+
+.course-map__player-fallback {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: clamp(1rem, 2.6vw, 1.2rem);
+  color: var(--text-h);
+}
+
+/* Vide */
+.course-map__hint-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(248, 250, 252, 0.72);
+  border-radius: inherit;
+}
+
+@media not all { /* dark désactivé temporairement */
+  .course-map__hint-empty {
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5e1;
+  }
+}
+
+/* ——— Modale quiz ——— */
+
+.course-map-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2600;
+  background: radial-gradient(circle at 50% 25%, rgba(26, 57, 138, 0.4) 0%, rgba(7, 10, 22, 0.78) 70%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+    max(22px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  min-height: 100dvh;
+  overflow-y: auto;
+}
+
+.course-map-modal {
+  margin: auto;
+  width: min(820px, 100%);
+  max-height: min(88dvh, calc(100dvh - 28px));
+  overflow-y: auto;
+  padding: 1.15rem 1.3rem 1.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(4, 8, 22, 0.48);
+}
+
+.course-map-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  max-height: min(48vh, 420px);
+  overflow-y: auto;
+}
+
+.course-map-modal__body p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.course-map-modal__read {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+  cursor: pointer;
+  user-select: none;
+}
+
+.course-map-modal__read input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--brand-purple);
+  cursor: pointer;
+}
+
+.course-map-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.course-quiz {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.quiz-question {
+  margin: 0;
+  padding: 1.1rem 1.15rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.quiz-question legend {
+  font-weight: 700;
+  padding: 0 0.5rem;
+  font-size: 1rem;
+  color: var(--text-h);
+  letter-spacing: -0.01em;
+}
+
+.quiz-answers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.quiz-answer {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text-h);
+  background: var(--bg-subtle);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.quiz-answer:hover {
+  border-color: var(--brand-purple);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(114, 66, 208, 0.15);
+}
+
+.quiz-answer input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  inset: 0;
+}
+
+.quiz-answer__letter {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--brand-purple);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.quiz-answer__label {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.quiz-answer__check {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--accent-gradient);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.quiz-answer__check svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* État sélectionné — clair, lisible et dans le thème */
+.quiz-answer--checked {
+  border-color: var(--brand-purple);
+  background: linear-gradient(
+    135deg,
+    rgba(27, 23, 255, 0.08) 0%,
+    rgba(114, 66, 208, 0.10) 50%,
+    rgba(255, 0, 122, 0.08) 100%
+  );
+  box-shadow:
+    0 0 0 3px rgba(114, 66, 208, 0.18),
+    0 8px 22px rgba(114, 66, 208, 0.18);
+}
+
+.quiz-answer--checked .quiz-answer__letter {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+
+.quiz-answer--checked .quiz-answer__check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.quiz-answer:focus-within {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(114, 66, 208, 0.28),
+    0 8px 22px rgba(114, 66, 208, 0.18);
+}
+
+@media not all { /* dark désactivé temporairement */
+  .quiz-answer {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .quiz-answer__letter {
+    background: var(--bg-subtle);
+    color: #c4b5fd;
+  }
+  .quiz-answer--checked {
+    background: linear-gradient(
+      135deg,
+      rgba(138, 132, 255, 0.16) 0%,
+      rgba(160, 122, 238, 0.18) 50%,
+      rgba(255, 77, 166, 0.14) 100%
+    );
+  }
+}
+
+@media (max-width: 760px) {
+  .quiz-answers-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ——— Écran de résultat quiz ——— */
+
+.quiz-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 0.4rem 0 0.2rem;
+  animation: quiz-result-in 0.4s ease-out both;
+}
+
+@keyframes quiz-result-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quiz-result__hero {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.quiz-result--pass .quiz-result__hero {
+  border-color: rgba(5, 150, 105, 0.4);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.08), rgba(27, 23, 255, 0.05));
+}
+
+.quiz-result--fail .quiz-result__hero {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.06), rgba(248, 113, 113, 0.04));
+}
+
+.quiz-result__score-ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.quiz-result__score-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.quiz-result__ring-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 8;
+}
+
+.quiz-result__ring-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.8s ease;
+}
+
+.quiz-result--pass .quiz-result__ring-fill { stroke: var(--success); }
+.quiz-result--fail .quiz-result__ring-fill { stroke: var(--danger); }
+
+.quiz-result__score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6px;
+  font-family: var(--mono);
+  color: var(--text-h);
+}
+
+.quiz-result__score-value strong {
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.quiz-result__score-value span {
+  font-size: 0.8rem;
+  opacity: 0.65;
+  margin-left: 1px;
+}
+
+.quiz-result__hero-text { min-width: 0; }
+
+.quiz-result__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-purple);
+}
+
+.quiz-result--pass .quiz-result__eyebrow { color: var(--success); }
+.quiz-result--fail .quiz-result__eyebrow { color: var(--danger); }
+
+.quiz-result__sub {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.quiz-result__rewards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.65rem;
+}
+
+.quiz-result__reward {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  animation: quiz-result-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.quiz-result__reward--coins { animation-delay: 0.1s; }
+.quiz-result__reward--rank { animation-delay: 0.2s; }
+
+@keyframes quiz-result-pop {
+  0% { opacity: 0; transform: scale(0.7) translateY(6px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.quiz-result__reward-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.quiz-result__reward-value {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 1.4rem;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.quiz-result__reward--xp {
+  border-color: rgba(114, 66, 208, 0.35);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 0, 122, 0.10), transparent 60%),
+    var(--surface);
+}
+
+.quiz-result__reward--coins .quiz-result__reward-value {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.quiz-result__reward--rank {
+  border-color: rgba(255, 0, 122, 0.4);
+  background:
+    radial-gradient(circle at 0% 100%, rgba(255, 0, 122, 0.14), transparent 60%),
+    var(--surface);
+}
+
+.quiz-result__sparkle {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, rgba(255, 0, 122, 0.45) 0%, transparent 60%);
+  filter: blur(8px);
+  transform: translateY(-50%);
+  animation: quiz-result-sparkle 1.2s ease-out 0.2s both;
+}
+
+@keyframes quiz-result-sparkle {
+  0% { opacity: 0; transform: translateY(-50%) scale(0.4); }
+  60% { opacity: 1; transform: translateY(-50%) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-50%) scale(1.4); }
+}
+
+@media (max-width: 600px) {
+  .quiz-result__hero {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+}
+
+/* ——— Toasts ——— */
+
+.toast-stack {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3200;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  pointer-events: none;
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+  animation: toast-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.toast__icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.toast--success .toast__icon { background: var(--success); }
+.toast--error .toast__icon { background: var(--danger); }
+.toast--info .toast__icon { background: var(--accent-gradient); }
+
+.toast--success { border-color: rgba(5, 150, 105, 0.4); }
+.toast--error { border-color: rgba(220, 38, 38, 0.4); }
+.toast--info { border-color: rgba(114, 66, 208, 0.35); }
+
+.toast__text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
