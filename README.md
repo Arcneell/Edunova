@@ -1,6 +1,6 @@
-# ?? Edunova � Plateforme de formation interactive pour alternants
+# Edunova - Plateforme de formation interactive pour alternants
 
-> Une application web pens�e pour rendre les parcours p�dagogiques engageants, personnalis�s et faciles � cr�er pour les formateurs.
+> Une application web pensee pour rendre les parcours pedagogiques engageants, personnalises et faciles a creer pour les formateurs.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-4.x-092E20?logo=django&logoColor=white)
@@ -10,39 +10,39 @@
 
 ---
 
-## ?? Sommaire
+## Sommaire
 
-1. [Pr�requis](#-pr�requis)
-2. [Installation](#-installation)
-3. [Acc�s � l'application](#-acc�s-�-lapplication)
-   - [En tant qu'apprenant](#en-tant-quapprenant)
-   - [En tant que formateur](#en-tant-que-formateur)
-   - [En tant qu'administrateur](#en-tant-quadministrateur)
-4. [Donn�es de d�monstration](#-donn�es-de-d�monstration)
-5. [Stack technique](#-stack-technique)
-6. [Tests API](#-tests-api)
-7. [D�pannage](#-d�pannage)
+1. Prerequis
+2. Installation
+3. Acces a l'application
+   - En tant qu'apprenant
+   - En tant que formateur
+   - En tant qu'administrateur
+4. Donnees de demonstration
+5. Stack technique
+6. Tests API
+7. Depannage
 
 ---
 
-## ? Pr�requis
+## Prerequis
 
 - [Docker Desktop](https://docs.docker.com/get-docker/) (inclut Docker Compose)
 
-Aucune installation de Python, Node.js ou PostgreSQL n'est n�cessaire sur la machine h�te.
+Aucune installation de Python, Node.js ou PostgreSQL n'est necessaire sur la machine hote.
 
 ---
 
-## ?? Installation
+## Installation
 
-### �tape 1 � Cloner le d�p�t
+### Etape 1 - Cloner le depot
 
 ```bash
 git clone <url-du-depot>
 cd Edunova
 ```
 
-### �tape 2 � Cr�er le fichier de configuration
+### Etape 2 - Creer le fichier de configuration
 
 Copier le fichier d'exemple :
 
@@ -54,42 +54,42 @@ copy .env.example .env  # Windows
 Ouvrir `.env` et renseigner **au minimum** ces variables :
 
 ```env
-# Base de donn�es
+# Base de donnees
 POSTGRES_DB=edunova
 POSTGRES_USER=edunova
 POSTGRES_PASSWORD=motdepassefort
 
-# Ports expos�s (modifier si d�j� utilis�s sur votre machine)
+# Ports exposes (modifier si deja utilises sur votre machine)
 BACKEND_PORT=8000
 FRONTEND_PORT=5173
 
-# Django � � remplir � l'�tape suivante
+# Django - a remplir a l'etape suivante
 SECRET_KEY=
 ```
 
-### �tape 3 � G�n�rer la SECRET_KEY
+### Etape 3 - Generer la SECRET_KEY
 
-La `SECRET_KEY` est obligatoire pour Django. G�n�rez-la avec cette commande (pas besoin de Python install� localement) :
+La `SECRET_KEY` est obligatoire pour Django. Generez-la avec cette commande (pas besoin de Python installe localement) :
 
 ```bash
 docker compose run --rm --no-deps --entrypoint python backend -c "import secrets; print(secrets.token_urlsafe(50))"
 ```
 
-Copiez la valeur affich�e dans `.env` :
+Copiez la valeur affichee dans `.env` :
 
 ```env
 SECRET_KEY=la_valeur_generee_ici
 ```
 
-### �tape 4 � Lancer l'application
+### Etape 4 - Lancer l'application
 
 ```bash
 docker compose up --build
 ```
 
-> Le premier lancement t�l�charge les images Docker et installe les d�pendances npm � compter **2 � 5 minutes**. Les lancements suivants sont beaucoup plus rapides.
+> Le premier lancement telecharge les images Docker et installe les dependances npm - compter **2 a 5 minutes**. Les lancements suivants sont beaucoup plus rapides.
 
-Une fois d�marr�, l'application est accessible :
+Une fois demarre, l'application est accessible :
 
 | Service | URL |
 |---------|-----|
@@ -98,27 +98,27 @@ Une fois d�marr�, l'application est accessible :
 
 ---
 
-## ?? Acc�s � l'application
+## Acces a l'application
 
 ### En tant qu'apprenant
 
 1. Ouvrir **http://localhost:5173**
-2. Cliquer sur **S'inscrire** et cr�er un compte
+2. Cliquer sur **S'inscrire** et creer un compte
 3. Se connecter avec ses identifiants
 4. Depuis le **tableau de bord** (`/dashboard`), voir sa progression et ses badges
-5. Aller sur **Mes cours** (`/courses/ma-thematiques`) pour suivre un parcours p�dagogique
+5. Aller sur **Mes cours** pour suivre un parcours pedagogique
 
-> Un compte cr�� via l'inscription est automatiquement un apprenant. Il peut suivre des cours, passer des quiz et gagner des badges.
+> Un compte cree via l'inscription est automatiquement un apprenant. Il peut suivre des cours, passer des quiz et gagner des badges.
 
 ---
 
 ### En tant que formateur
 
-Le formateur dispose d'un back-office pour cr�er et g�rer les cours et les quiz.
+Le formateur dispose d'un back-office pour creer et gerer les cours et les quiz.
 
-#### Option A � Utiliser les donn�es de d�monstration *(recommand� pour tester rapidement)*
+#### Option A - Utiliser les donnees de demonstration *(recommande pour tester rapidement)*
 
-Charger les donn�es de d�mo une fois l'application d�marr�e :
+Charger les donnees de demo une fois l'application demarree :
 
 ```bash
 docker compose exec backend python manage.py seed_cosmetics
@@ -127,17 +127,17 @@ docker compose exec backend python manage.py seed_demo
 
 Se connecter avec l'un de ces comptes :
 
-| Email | Mot de passe | Th�matique |
+| Email | Mot de passe | Thematique |
 |-------|-------------|------------|
-| `marie.dubois@edunova.local` | `Edunova123!` | Cybers�curit� |
-| `paul.martin@edunova.local` | `Edunova123!` | R�seaux |
-| `sofia.garcia@edunova.local` | `Edunova123!` | D�veloppement web |
+| `marie.dubois@edunova.local` | `Edunova123!` | Cybersecurite |
+| `paul.martin@edunova.local` | `Edunova123!` | Reseaux |
+| `sofia.garcia@edunova.local` | `Edunova123!` | Developpement web |
 | `thomas.leroy@edunova.local` | `Edunova123!` | DevOps |
 
-#### Option B � Cr�er un formateur manuellement
+#### Option B - Creer un formateur manuellement
 
-1. Cr�er un compte via la page d'inscription
-2. Assigner le r�le `formateur` � ce compte :
+1. Creer un compte via la page d'inscription
+2. Assigner le role `formateur` a ce compte :
 
 ```bash
 docker compose exec backend python manage.py shell -c "
@@ -146,7 +146,7 @@ role = Role.objects.get(role_name='formateur')
 profile = Profile.objects.get(user__email='email@exemple.com')
 profile.role = role
 profile.save()
-print('R�le formateur assign�.')
+print('Role formateur assigne.')
 "
 ```
 
@@ -154,91 +154,91 @@ print('R�le formateur assign�.')
 
 | URL | Description |
 |-----|-------------|
-| `/admin` | Tableau de bord � vue d'ensemble |
-| `/admin/cours` | Cr�er, modifier et supprimer des cours |
-| `/admin/quizz` | Cr�er et modifier les quiz li�s aux cours |
+| `/admin` | Tableau de bord - vue d'ensemble |
+| `/admin/cours` | Creer, modifier et supprimer des cours |
+| `/admin/quizz` | Creer et modifier les quiz lies aux cours |
 
 ---
 
 ### En tant qu'administrateur
 
-L'administrateur acc�de � toutes les pages du back-office, y compris la gestion des utilisateurs et les logs.
+L'administrateur accede a toutes les pages du back-office, y compris la gestion des utilisateurs et les logs.
 
-#### Option A � Utiliser le compte de d�mo *(apr�s `seed_demo`)*
+#### Option A - Utiliser le compte de demo *(apres `seed_demo`)*
 
 | Email | Mot de passe |
 |-------|-------------|
 | `admin@edunova.local` | `Edunova123!` |
 
-#### Option B � Cr�er un superutilisateur
+#### Option B - Creer un superutilisateur
 
 ```bash
 docker compose exec backend python manage.py createsuperuser
 ```
 
-#### Pages accessibles � l'administrateur
+#### Pages accessibles a l'administrateur
 
 | URL | Description |
 |-----|-------------|
 | `/admin` | Tableau de bord |
 | `/admin/cours` | Tous les cours |
 | `/admin/quizz` | Tous les quiz |
-| `/admin/users` | Liste et r�les de tous les utilisateurs |
+| `/admin/users` | Liste et roles de tous les utilisateurs |
 | `/admin/logs` | Historique des actions |
 
 ---
 
-## ?? Donn�es de d�monstration
+## Donnees de demonstration
 
-Le script `seed_demo` peuple la base avec un jeu de donn�es r�aliste :
+Le script `seed_demo` peuple la base avec un jeu de donnees realiste :
 
 - **1 administrateur** (`admin@edunova.local`)
-- **4 formateurs**, chacun responsable d'une th�matique
-- **24 apprenants** avec des progressions vari�es (d�butant, interm�diaire, avanc�)
-- **4 th�matiques**, **16 cours** complets avec quiz, questions et r�ponses
-- Badges, avatars et historique d'activit�
+- **4 formateurs**, chacun responsable d'une thematique
+- **24 apprenants** avec des progressions variees (debutant, intermediaire, avance)
+- **4 thematiques**, **16 cours** complets avec quiz, questions et reponses
+- Badges, avatars et historique d'activite
 
-Mot de passe pour tous les comptes de d�mo : **`Edunova123!`**
+Mot de passe pour tous les comptes de demo : **`Edunova123!`**
 
 ```bash
-# � lancer dans cet ordre
+# A lancer dans cet ordre
 docker compose exec backend python manage.py seed_cosmetics
 docker compose exec backend python manage.py seed_demo
 
-# R�initialiser et recharger depuis z�ro
+# Reinitialiser et recharger depuis zero
 docker compose exec backend python manage.py seed_demo --reset
 ```
 
 ---
 
-## ?? Stack technique
+## Stack technique
 
 | Couche | Technologie |
 |--------|-------------|
 | Backend | Django 4 + Django REST Framework |
 | Frontend | React 18 + Vite |
-| Base de donn�es | PostgreSQL 17 |
+| Base de donnees | PostgreSQL 17 |
 | Conteneurisation | Docker + Docker Compose |
-| IA (g�n�ration de cours) | Google Gemini (optionnel) |
+| IA (generation de cours) | Google Gemini (optionnel) |
 
-**G�n�ration IA** : pour activer la cr�ation de cours assist�e par IA, renseigner `GEMINI_API_KEY` dans `.env` (cl� obtenue sur [Google AI Studio](https://aistudio.google.com/apikey)). Sans cl�, l'endpoint `/api/formateur/ai/*` renvoie une erreur 503 mais le reste de l'application fonctionne normalement.
+**Generation IA** : pour activer la creation de cours assistee par IA, renseigner `GEMINI_API_KEY` dans `.env` (cle obtenue sur [Google AI Studio](https://aistudio.google.com/apikey)). Sans cle, l'endpoint `/api/formateur/ai/*` renvoie une erreur 503 mais le reste de l'application fonctionne normalement.
 
-En production : passer `DEBUG=False`, d�finir une `SECRET_KEY` forte, et renseigner `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` avec vos domaines r�els.
+En production : passer `DEBUG=False`, definir une `SECRET_KEY` forte, et renseigner `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` avec vos domaines reels.
 
 ---
 
-## ?? Tests API
+## Tests API
 
-Les tests v�rifient les endpoints les plus critiques de l'application :
+Les tests verifient les endpoints les plus critiques de l'application :
 
-| Module | Ce qui est test� |
+| Module | Ce qui est teste |
 |--------|-----------------|
-| `tests.auth` | Inscription, connexion, d�connexion, `/me/` |
-| `tests.courses` | Liste, d�tail, inscription et d�sinscription � un cours |
-| `tests.quiz` | Lecture (anti-triche), soumission r�ussie et �chou�e |
-| `tests.cosmetics` | Liste, achat, double achat, �quipement |
+| `tests.auth` | Inscription, connexion, deconnexion, `/me/` |
+| `tests.courses` | Liste, detail, inscription et desinscription a un cours |
+| `tests.quiz` | Lecture (anti-triche), soumission reussie et echouee |
+| `tests.cosmetics` | Liste, achat, double achat, equipement |
 
-Chaque suite cr�e ses propres donn�es et les supprime apr�s ex�cution.
+Chaque suite cree ses propres donnees et les supprime apres execution.
 
 ### Lancement manuel
 
@@ -249,36 +249,35 @@ docker compose exec backend python -m tests.quiz
 docker compose exec backend python -m tests.cosmetics
 ```
 
-### Lancement automatique au d�marrage
+### Lancement automatique au demarrage
 
-Ajouter dans `.env` pour lancer les tests � chaque d�marrage du backend (utile en CI/CD) :
+Ajouter dans `.env` pour lancer les tests a chaque demarrage du backend (utile en CI/CD) :
 
 ```env
 RUN_TESTS=1
 ```
 
-Le serveur **ne d�marre pas** si un test �choue.
+Le serveur **ne demarre pas** si un test echoue.
 
 ---
 
-## ?? D�pannage
+## Depannage
 
-**Le frontend affiche une erreur de connexion � l'API**
-? V�rifier que tous les services sont d�marr�s : `docker compose ps`. Les services `backend` et `db` doivent �tre `healthy`.
+**Le frontend affiche une erreur de connexion a l'API**
+Verifier que tous les services sont demarres : `docker compose ps`. Les services `backend` et `db` doivent etre `healthy`.
 
-**Le premier lancement est tr�s lent**
-? Normal : npm installe les d�pendances lors du premier d�marrage (1�3 min). Les suivants utilisent le cache du volume `frontend_node_modules`.
+**Le premier lancement est tres lent**
+Normal : npm installe les dependances lors du premier demarrage (1-3 min). Les suivants utilisent le cache du volume `frontend_node_modules`.
 
 **Erreur `InconsistentMigrationHistory`**
-? La base de donn�es existe d�j� avec un historique incompatible. Repartir d'une base vide :
+La base de donnees existe deja avec un historique incompatible. Repartir d'une base vide :
 ```bash
 docker compose down -v
 docker compose up --build
 ```
 
-**Forcer la r�installation des d�pendances npm**
+**Forcer la reinstallation des dependances npm**
 ```bash
 docker volume rm edunova_frontend_node_modules
 docker compose up --build
 ```
-ee
