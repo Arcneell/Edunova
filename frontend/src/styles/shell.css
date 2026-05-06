@@ -21,7 +21,7 @@
     100% 300px;
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .app-shell {
     background-color: var(--bg);
     background-image:
@@ -65,7 +65,7 @@
   background: rgba(255, 255, 255, 0.75);
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .app-footer {
     background: rgba(22, 27, 38, 0.92);
   }

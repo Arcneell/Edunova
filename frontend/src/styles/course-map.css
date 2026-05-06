@@ -469,7 +469,7 @@
   border-radius: inherit;
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .course-map__hint-empty {
     background: rgba(15, 23, 42, 0.6);
     color: #cbd5e1;
@@ -688,7 +688,7 @@
     0 8px 22px rgba(114, 66, 208, 0.18);
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .quiz-answer {
     background: rgba(255, 255, 255, 0.03);
   }

@@ -169,7 +169,7 @@
   font-weight: 500;
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .dash-stat {
     background: linear-gradient(150deg, #1a1f2e 0%, #161b26 100%);
     border-color: rgba(129, 140, 248, 0.22);
@@ -225,7 +225,7 @@
   overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .dash-panel {
     border-color: rgba(129, 140, 248, 0.2);
     background: linear-gradient(168deg, #1c2130 0%, #161b26 55%, #141822 100%);
@@ -446,7 +446,7 @@
   border: 1px solid rgba(114, 66, 208, 0.28);
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .dash-badge--purple {
     background: rgba(114, 66, 208, 0.22);
     color: rgb(125, 81, 212);
@@ -465,7 +465,7 @@
   border: 1px solid rgba(255, 0, 122, 0.28);
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .dash-badge--blue {
     background: rgba(27, 23, 255, 0.22);
     color: rgb(54, 51, 255);
@@ -508,7 +508,7 @@
   border: 1px solid rgba(114, 66, 208, 0.14);
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .dash-pill--blue {
     color: rgb(54, 51, 255);
   }
@@ -590,7 +590,7 @@
   color: var(--text-h);
 }
 
-@media (prefers-color-scheme: dark) {
+@media not all { /* dark désactivé temporairement */
   .dash-pager__btn {
     background: #1e293b;
     color: #e2e8f0;
