@@ -526,6 +526,8 @@ class ActivityLog(models.Model):
         ANSWER_CREATE     = 'answer_create',      _('création réponse')
         ANSWER_UPDATE     = 'answer_update',      _('modification réponse')
         ANSWER_DELETE     = 'answer_delete',      _('suppression réponse')
+        # Formateur — génération IA
+        AI_COURSE_GENERATE = 'ai_course_generate', _('génération IA d’un cours')
 
     log_id = models.BigAutoField(_('identifiant log'), primary_key=True, db_column='log_id')
     user = models.ForeignKey(
