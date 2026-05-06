@@ -44,7 +44,7 @@ done
 if [ "${RUN_TESTS:-0}" = "1" ]; then
   echo "[backend] Lancement des tests API…"
   failures=0
-  for module in tests.auth tests.courses tests.quiz tests.cosmetics; do
+  for module in tests.auth tests.courses tests.quiz tests.cosmetics tests.ai; do
     echo "[test] → $module"
     python -m "$module" || failures=$((failures + 1))
   done
