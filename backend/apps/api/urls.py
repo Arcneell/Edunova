@@ -15,4 +15,5 @@ urlpatterns = [
     path('quizzes/', include('apps.api.quiz.urls')),
     path('quizzes/<int:quiz_id>/questions/', include('apps.api.question.urls')),
     path('formateur/', include('apps.api.formateur.urls')),
+    path('formateur/ai/', include('apps.api.ai.urls')),
 ]
