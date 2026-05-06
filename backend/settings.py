@@ -138,8 +138,14 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'login': '30/minute',
         'register': '15/minute',
+        'ai_generate': '20/hour',
     },
 }
+
+# Gemini (génération IA de cours) — clef et modèle lus dans .env, jamais codés en dur.
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '').strip()
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash-lite').strip() or 'gemini-2.5-flash-lite'
+GEMINI_TIMEOUT_S = int(os.environ.get('GEMINI_TIMEOUT_S', '30') or '30')
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = True

@@ -33,6 +33,20 @@ class FormateurCourseSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['course_id']
 
+    def validate_delivered_badge(self, value):
+        # OneToOneField : un badge ne peut être lié qu'à un seul cours. On exclut
+        # l'instance courante (cas PATCH où on garde le même badge).
+        if value is None:
+            return value
+        qs = Course.objects.filter(delivered_badge=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                'Ce badge est déjà attribué à un autre cours. Choisissez-en un libre ou laissez « Aucun ».'
+            )
+        return value
+
 
 class FormateurThemeSerializer(serializers.ModelSerializer):
     class Meta:

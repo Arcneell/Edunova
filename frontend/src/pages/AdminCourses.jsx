@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { generateAiCourse, getAiStatus } from '../api/user/ai.js'
 import { getBadges } from '../api/user/badges.js'
 import {
   createFormateurCourse,
@@ -34,6 +35,18 @@ const emptyCourseForm = () => ({
   delivered_badge: '',
 })
 
+const emptyAiForm = () => ({
+  topic: '',
+  level: 'debutant',
+  language: 'fr',
+  num_questions: 5,
+  coins_on_success: 20,
+  min_score_to_pass: 70,
+  map_order: 0,
+  theme_id: '',
+  delivered_badge: '',
+})
+
 const COURSES_PER_PAGE = 8
 
 export default function AdminCourses() {
@@ -56,6 +69,12 @@ export default function AdminCourses() {
   const [categoryError, setCategoryError] = useState('')
   const [deletingThemeId, setDeletingThemeId] = useState(null)
   const [coursePageRequested, setCoursePageRequested] = useState(1)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiForm, setAiForm] = useState(emptyAiForm)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [aiStatus, setAiStatus] = useState({ configured: false, model: null })
+  const [aiSuccess, setAiSuccess] = useState(null) // { course_id, course_title, quiz_id, question_count }
 
   const loadRefs = useCallback(async () => {
     setLoadingRefs(true)
@@ -98,6 +117,25 @@ export default function AdminCourses() {
     void loadCourses()
   }, [loadCourses])
 
+  useEffect(() => {
+    let cancelled = false
+    getAiStatus()
+      .then((data) => {
+        if (cancelled) return
+        setAiStatus({
+          configured: Boolean(data?.configured),
+          model: data?.model || null,
+        })
+      })
+      .catch(() => {
+        if (cancelled) return
+        setAiStatus({ configured: false, model: null })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const coursePageCount = Math.max(1, Math.ceil(courses.length / COURSES_PER_PAGE))
   const coursePage = Math.min(Math.max(1, coursePageRequested), coursePageCount)
   const paginatedCourses = useMemo(() => {
@@ -105,11 +143,79 @@ export default function AdminCourses() {
     return courses.slice(start, start + COURSES_PER_PAGE)
   }, [courses, coursePage])
 
+  // Badge.delivered_badge est OneToOne : on désactive ceux déjà attribués à un cours
+  // pour éviter une erreur 400 au moment de la soumission.
+  const usedBadgeIds = useMemo(() => {
+    const set = new Set()
+    for (const c of courses) {
+      if (c?.delivered_badge != null) set.add(Number(c.delivered_badge))
+    }
+    return set
+  }, [courses])
+
   function openCreate() {
     setModalError('')
     setCreateForm(emptyCourseForm())
     setCreating(false)
     setCreateOpen(true)
+  }
+
+  function openAi() {
+    setAiError('')
+    setAiForm(emptyAiForm())
+    setAiLoading(false)
+    setAiOpen(true)
+  }
+
+  async function handleAiSubmit(event) {
+    event.preventDefault()
+    const topic = aiForm.topic.trim()
+    const themeId = Number(aiForm.theme_id)
+    if (topic.length < 5) {
+      setAiError('Décrivez le sujet du cours en au moins 5 caractères.')
+      return
+    }
+    if (!Number.isFinite(themeId) || themeId <= 0) {
+      setAiError('Choisissez un thème de rattachement.')
+      return
+    }
+    let delivered_badge = null
+    if (aiForm.delivered_badge !== '' && aiForm.delivered_badge != null) {
+      const bid = Number(aiForm.delivered_badge)
+      if (!Number.isFinite(bid) || bid <= 0) {
+        setAiError('Badge invalide.')
+        return
+      }
+      delivered_badge = bid
+    }
+    setAiError('')
+    setAiLoading(true)
+    try {
+      const result = await generateAiCourse({
+        topic,
+        theme: themeId,
+        level: aiForm.level,
+        language: aiForm.language,
+        num_questions: Number(aiForm.num_questions) || 5,
+        coins_on_success: Number(aiForm.coins_on_success) || 20,
+        min_score_to_pass: Number(aiForm.min_score_to_pass) || 70,
+        map_order: Number(aiForm.map_order) || 0,
+        delivered_badge,
+      })
+      setAiSuccess({
+        course_id: result?.course?.course_id ?? null,
+        course_title: result?.course?.course_title || 'Cours généré',
+        quiz_id: result?.quiz?.quiz_id ?? null,
+        question_count: Array.isArray(result?.questions) ? result.questions.length : 0,
+      })
+      setAiOpen(false)
+      setAiForm(emptyAiForm())
+      await Promise.all([loadCourses(), loadRefs()])
+    } catch (e) {
+      setAiError(getReadableFormError(e, 'La génération du cours a échoué. Réessayez dans quelques instants.'))
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   async function handleDelete(course) {
@@ -292,6 +398,19 @@ export default function AdminCourses() {
           <button type="button" className="btn btn--primary" onClick={openCreate} disabled={loadingRefs}>
             Nouveau cours
           </button>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={openAi}
+            disabled={loadingRefs || !aiStatus.configured}
+            title={
+              aiStatus.configured
+                ? `Générer un cours complet via ${aiStatus.model || 'l’IA'}`
+                : 'Service IA non configuré côté serveur (GEMINI_API_KEY manquante).'
+            }
+          >
+            Générer avec l’IA
+          </button>
           <Link to="/admin/quizz" className="btn btn--secondary">
             Gérer les quiz
           </Link>
@@ -364,6 +483,26 @@ export default function AdminCourses() {
           Liste des parcours rattachés à un thème et à un quiz de validation.
         </p>
       </div>
+
+      {aiSuccess ? (
+        <div className="dash-alert" role="status" aria-live="polite">
+          Cours créé par l’IA :{' '}
+          <strong>« {aiSuccess.course_title} »</strong>
+          {aiSuccess.course_id ? <> (#{aiSuccess.course_id})</> : null}{' '}
+          — {aiSuccess.question_count} question(s) générée(s)
+          {aiSuccess.quiz_id ? <> · quiz #{aiSuccess.quiz_id}</> : null}.{' '}
+          Vous pouvez le relire et l’éditer ci-dessous, ou ajuster le quiz depuis{' '}
+          <Link to="/admin/quizz">Gérer les quiz</Link>.{' '}
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={() => setAiSuccess(null)}
+            style={{ marginLeft: '0.5rem' }}
+          >
+            Fermer
+          </button>
+        </div>
+      ) : null}
 
       <section className="admin-cards" aria-labelledby="courses-section-title">
         {loading ? <p className="muted">Chargement des cours…</p> : null}
@@ -513,11 +652,14 @@ export default function AdminCourses() {
                   onChange={(e) => setCreateForm((f) => ({ ...f, delivered_badge: e.target.value }))}
                 >
                   <option value="">Aucun</option>
-                  {badges.map((b) => (
-                    <option key={b.badge_id} value={b.badge_id}>
-                      {b.badge_name}
-                    </option>
-                  ))}
+                  {badges.map((b) => {
+                    const isUsed = usedBadgeIds.has(Number(b.badge_id))
+                    return (
+                      <option key={b.badge_id} value={b.badge_id} disabled={isUsed}>
+                        {b.badge_name}{isUsed ? ' (déjà attribué)' : ''}
+                      </option>
+                    )
+                  })}
                 </select>
               </label>
               <label>
@@ -609,11 +751,20 @@ export default function AdminCourses() {
                   onChange={(e) => setEditForm((f) => ({ ...f, delivered_badge: e.target.value }))}
                 >
                   <option value="">Aucun</option>
-                  {badges.map((b) => (
-                    <option key={b.badge_id} value={b.badge_id}>
-                      {b.badge_name}
-                    </option>
-                  ))}
+                  {badges.map((b) => {
+                    // En édition on conserve éditable le badge actuel du cours.
+                    const currentBadgeId =
+                      editingCourse?.delivered_badge != null
+                        ? Number(editingCourse.delivered_badge)
+                        : null
+                    const isUsed =
+                      usedBadgeIds.has(Number(b.badge_id)) && Number(b.badge_id) !== currentBadgeId
+                    return (
+                      <option key={b.badge_id} value={b.badge_id} disabled={isUsed}>
+                        {b.badge_name}{isUsed ? ' (déjà attribué)' : ''}
+                      </option>
+                    )
+                  })}
                 </select>
               </label>
               <label>
@@ -631,6 +782,160 @@ export default function AdminCourses() {
                 </button>
                 <button type="button" className="btn btn--secondary" onClick={handleEditClose} disabled={savingEdit}>
                   Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </ModalOverlayPortal>
+      ) : null}
+
+      {aiOpen ? (
+        <ModalOverlayPortal
+          role="dialog"
+          aria-modal="true"
+          aria-label="Générer un cours avec l’IA"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !aiLoading) setAiOpen(false)
+          }}
+        >
+          <div className="course-map-modal card" onClick={(ev) => ev.stopPropagation()}>
+            <div className="course-map-modal__head">
+              <h2 className="section-title">Générer un cours avec l’IA</h2>
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() => !aiLoading && setAiOpen(false)}
+                disabled={aiLoading}
+              >
+                Fermer
+              </button>
+            </div>
+            <p className="muted">
+              {aiStatus.model
+                ? `Le serveur appelle ${aiStatus.model} et persiste cours + quiz + questions en une opération.`
+                : 'Le serveur appelle Gemini et persiste cours + quiz + questions en une opération.'}
+              {' '}Vous pourrez ensuite tout éditer depuis la liste des cours et la page Quiz.
+            </p>
+            {aiLoading ? (
+              <p className="dash-alert" role="status" aria-live="polite">
+                Génération en cours… L’appel à l’IA prend généralement 5 à 15 secondes.
+                Ne fermez pas cette fenêtre.
+              </p>
+            ) : null}
+            {aiError ? <p className="error">{aiError}</p> : null}
+            <form className="stack-form" onSubmit={handleAiSubmit}>
+              <label>
+                Sujet du cours
+                <textarea
+                  rows={3}
+                  value={aiForm.topic}
+                  onChange={(e) => setAiForm((f) => ({ ...f, topic: e.target.value }))}
+                  placeholder="Ex. : Les fondamentaux du HTML pour débuter le développement web."
+                  required
+                />
+              </label>
+              <label>
+                Thème
+                <select
+                  value={aiForm.theme_id}
+                  onChange={(e) => setAiForm((f) => ({ ...f, theme_id: e.target.value }))}
+                  required
+                >
+                  <option value="">— Choisir —</option>
+                  {themes.map((th) => (
+                    <option key={th.theme_id} value={th.theme_id}>
+                      {th.theme_title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Niveau
+                <select
+                  value={aiForm.level}
+                  onChange={(e) => setAiForm((f) => ({ ...f, level: e.target.value }))}
+                >
+                  <option value="debutant">Débutant</option>
+                  <option value="intermediaire">Intermédiaire</option>
+                  <option value="avance">Avancé</option>
+                </select>
+              </label>
+              <label>
+                Langue
+                <select
+                  value={aiForm.language}
+                  onChange={(e) => setAiForm((f) => ({ ...f, language: e.target.value }))}
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">Anglais</option>
+                </select>
+              </label>
+              <label>
+                Nombre de questions de quiz
+                <input
+                  type="number"
+                  min={3}
+                  max={10}
+                  value={aiForm.num_questions}
+                  onChange={(e) => setAiForm((f) => ({ ...f, num_questions: e.target.value }))}
+                />
+              </label>
+              <label>
+                Pièces si réussite
+                <input
+                  type="number"
+                  min={0}
+                  value={aiForm.coins_on_success}
+                  onChange={(e) => setAiForm((f) => ({ ...f, coins_on_success: e.target.value }))}
+                />
+              </label>
+              <label>
+                Score minimum pour valider (%)
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={aiForm.min_score_to_pass}
+                  onChange={(e) => setAiForm((f) => ({ ...f, min_score_to_pass: e.target.value }))}
+                />
+              </label>
+              <label>
+                Badge délivré (optionnel)
+                <select
+                  value={aiForm.delivered_badge}
+                  onChange={(e) => setAiForm((f) => ({ ...f, delivered_badge: e.target.value }))}
+                >
+                  <option value="">Aucun</option>
+                  {badges.map((b) => {
+                    const isUsed = usedBadgeIds.has(Number(b.badge_id))
+                    return (
+                      <option key={b.badge_id} value={b.badge_id} disabled={isUsed}>
+                        {b.badge_name}{isUsed ? ' (déjà attribué)' : ''}
+                      </option>
+                    )
+                  })}
+                </select>
+              </label>
+              <label>
+                Ordre sur la carte
+                <input
+                  type="number"
+                  min={0}
+                  value={aiForm.map_order}
+                  onChange={(e) => setAiForm((f) => ({ ...f, map_order: e.target.value }))}
+                />
+              </label>
+              <div className="hero-actions">
+                <button type="submit" className="btn btn--primary" disabled={aiLoading || loadingRefs}>
+                  {aiLoading ? 'Génération en cours…' : 'Générer le cours'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  onClick={() => !aiLoading && setAiOpen(false)}
+                  disabled={aiLoading}
+                >
+                  Fermer
                 </button>
               </div>
             </form>

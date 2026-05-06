@@ -5,6 +5,13 @@ const FIELD_LABELS = {
   role: 'role',
   detail: 'detail',
   non_field_errors: '',
+  delivered_badge: 'badge délivré',
+  validating_quiz: 'quiz de validation',
+  course_title: 'titre du cours',
+  body_content: 'contenu du cours',
+  theme: 'thème',
+  topic: 'sujet',
+  num_questions: 'nombre de questions',
 }
 
 function toSentence(value) {
